@@ -190,17 +190,20 @@ func main() {
     tooltipFont, err := ttf.OpenFont(FONT_PATH, TOOLTIP_FONT_SIZE)
     CHECK_ERR(err)
 
-    // TODO: Make it work
+    var fullTimeMs float32
+    var elapsedTimeMs float32
+    fullTimeMs = 50000
+    var isPaused bool
+
     // TODO: Set label image
     pauseBtn := Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
         Tooltip: "Pause",
+        Callback: func(b *Button) {
+            isPaused = !isPaused
+        },
         Radius: BTN_RAD,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
-
-    var fullTimeMs float32
-    var elapsedTimeMs float32
-    fullTimeMs = 50000
 
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
@@ -227,16 +230,21 @@ func main() {
         rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
         rend.Clear()
 
+        remTimeMs := int(fullTimeMs-elapsedTimeMs)
         drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
-        drawRemTime(rend, remTimeFont, int(fullTimeMs-elapsedTimeMs))
-        pauseBtn.Draw(rend, mouseX, mouseY)
-        pauseBtn.DrawTooltip(rend, tooltipFont, mouseX, mouseY)
+        drawRemTime(rend, remTimeFont, remTimeMs)
+
         pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState)
         pauseBtn.Draw(rend)
         pauseBtn.DrawTooltip(rend, tooltipFont)
 
         rend.Present()
-        elapsedTimeMs += fpsMan.RateTicks
+        if !isPaused {
+            elapsedTimeMs += fpsMan.RateTicks
+        }
+        if remTimeMs <= 0 {
+            isPaused = true
+        }
         gfx.FramerateDelay(&fpsMan)
     }
 
