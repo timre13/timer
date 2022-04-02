@@ -9,7 +9,8 @@ import (
     "timer/common"
     "timer/button"
 )
-var CHECK_ERR = common.CHECK_ERR
+var PANIC_ERR = common.PANIC_ERR
+var WARN_ERR = common.WARN_ERR
 
 func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     if elapsedPerc < 0 {
@@ -37,26 +38,26 @@ func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
 
 func main() {
     err := sdl.Init(sdl.INIT_VIDEO)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
     err = ttf.Init()
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     window, err := sdl.CreateWindow("Timer", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, WIN_W, WIN_H, 0)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     rend, err := sdl.CreateRenderer(window, 0, 0)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
     err = rend.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     remTimeFont, err := ttf.OpenFont(FONT_PATH, REM_TIME_FONT_SIZE)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
     tooltipFont, err := ttf.OpenFont(FONT_PATH, TOOLTIP_FONT_SIZE)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     var fullTimeMs float32
     var elapsedTimeMs float32
-    fullTimeMs = 50000
+    fullTimeMs = 5000
     var isPaused bool
 
     pauseBtnImg := common.LoadImage(rend, "img/pause_btn.png")
@@ -114,8 +115,10 @@ func main() {
         if !isPaused {
             elapsedTimeMs += fpsMan.RateTicks
         }
-        if remTimeMs <= 0 {
+        if remTimeMs <= 0 && !isPaused {
             isPaused = true
+            err = window.Flash(sdl.FLASH_UNTIL_FOCUSED)
+            WARN_ERR(err)
         }
         gfx.FramerateDelay(&fpsMan)
     }

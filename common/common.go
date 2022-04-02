@@ -1,16 +1,27 @@
 package common
 
 import (
-    "math"
     "github.com/veandco/go-sdl2/sdl"
     "github.com/veandco/go-sdl2/ttf"
     "github.com/veandco/go-sdl2/img"
+    "math"
+    "fmt"
+    "runtime/debug"
 )
 
-func CHECK_ERR(err error) {
+func PANIC_ERR(err error) {
     if err != nil {
         sdl.Quit()
         panic(err)
+    }
+}
+
+func WARN_ERR(err error) {
+    if err != nil {
+        fmt.Print("Warning: ", err)
+        fmt.Println("\n----- Stack trace -----")
+        debug.PrintStack()
+        fmt.Println("--------- end ---------")
     }
 }
 
@@ -29,9 +40,9 @@ func LerpColors(x *sdl.Color, y *sdl.Color, t float32) sdl.Color {
 
 func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32, areCoordsCent bool) {
     textSurf, err := font.RenderUTF8Blended(str, *color)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
     textTex, err := rend.CreateTextureFromSurface(textSurf)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     var rectX, rectY int32
     if areCoordsCent {
@@ -64,10 +75,10 @@ type Image struct {
 */
 func LoadImage(rend *sdl.Renderer, path string) Image {
     imgSurf, err := img.Load(path)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     imgTex, err := rend.CreateTextureFromSurface(imgSurf)
-    CHECK_ERR(err)
+    PANIC_ERR(err)
 
     width, height := imgSurf.W, imgSurf.H
     imgSurf.Free()

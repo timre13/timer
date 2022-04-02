@@ -8,7 +8,7 @@ import (
     . "timer/consts"
     "timer/common"
 )
-var CHECK_ERR = common.CHECK_ERR
+var PANIC_ERR = common.PANIC_ERR
 
 type Button struct {
     CentX, CentY    int32           // Center position
@@ -78,12 +78,12 @@ func limit(x, min, max int) int {
 func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
     if b.isMouseHovered {
         tooltipW, tooltipH, err := font.SizeUTF8(b.Tooltip)
-        CHECK_ERR(err)
+        PANIC_ERR(err)
         tooltipX := int32(limit(int(b.mouseX)+20, 0, WIN_W-tooltipW))
         tooltipY := int32(limit(int(b.mouseY)+10, 0, WIN_H-tooltipH))
 
         gfx.RoundedBoxColor(rend, tooltipX, tooltipY, tooltipX+int32(tooltipW), tooltipY+int32(tooltipH), 2, COLOR_TOOLTIP_BG)
-        CHECK_ERR(err)
+        PANIC_ERR(err)
         common.RenderText(rend, font, b.Tooltip, &COLOR_FG, tooltipX, tooltipY, false)
     }
 }
