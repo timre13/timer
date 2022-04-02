@@ -103,14 +103,15 @@ func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
 
 type Button struct {
     // TODO: Label image
-    // TODO: Callback
     CentX, CentY    int32           // Center position
     Tooltip         string          // The text to display in a tooltip while hovering
     Radius          int32           // Radius
+    Callback        func(*Button)   // The callback that is called when pressing the button
     DefColor        *sdl.Color      // Normal color
     HoverColor      *sdl.Color      // Color while hovered
     HoverBdColor    *sdl.Color      // Border color while hovered
     mouseX, mouseY  int32           // The absolute mouse position, set by `UpdateMousePos()`
+    mouseBtnState   uint32          // Bitmask of pressed mouse buttons
     isMouseHovered  bool            // Set to true when the mouse is inside the button
 }
 
@@ -124,6 +125,15 @@ func (b *Button) isInside(x, y int32) bool {
 func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32) {
     b.mouseX = x
     b.mouseY = y
+    if b.isMouseHovered &&
+    // If the left mouse button has just been pressed
+    (b.mouseBtnState & sdl.ButtonLMask()) == 0 && (mouseBtnState & sdl.ButtonLMask()) != 0 {
+        // Call the callback if possible
+        if b.Callback != nil {
+            b.Callback(b)
+        }
+    }
+    b.mouseBtnState = mouseBtnState
     b.isMouseHovered = b.isInside(x, y)
 }
 
