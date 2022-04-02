@@ -59,15 +59,23 @@ func main() {
     fullTimeMs = 50000
     var isPaused bool
 
-    // TODO: Set label image
+    pauseBtnImg := common.LoadImage(rend, "img/pause_btn.png")
+    startBtnImg := common.LoadImage(rend, "img/start_btn.png")
+
     pauseBtn := button.Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
         Tooltip: "Pause",
-        Callback: func(b *button.Button) {
-            isPaused = !isPaused
-        },
+        LabelImg: &pauseBtnImg,
         Radius: BTN_RAD,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    pauseBtn.Callback = func(b *button.Button) {
+        isPaused = !isPaused
+        if isPaused {
+            pauseBtn.LabelImg = &startBtnImg
+        } else {
+            pauseBtn.LabelImg = &pauseBtnImg
+        }
+    }
 
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
