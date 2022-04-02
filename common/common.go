@@ -4,6 +4,7 @@ import (
     "math"
     "github.com/veandco/go-sdl2/sdl"
     "github.com/veandco/go-sdl2/ttf"
+    "github.com/veandco/go-sdl2/img"
 )
 
 func CHECK_ERR(err error) {
@@ -50,3 +51,26 @@ func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color
     textTex.Destroy()
 }
 
+type Image struct {
+    Img *sdl.Texture
+    Width, Height int32
+}
+
+/*
+ * Returns:
+ *     Texture
+ *     Width
+ *     Height
+*/
+func LoadImage(rend *sdl.Renderer, path string) Image {
+    imgSurf, err := img.Load(path)
+    CHECK_ERR(err)
+
+    imgTex, err := rend.CreateTextureFromSurface(imgSurf)
+    CHECK_ERR(err)
+
+    width, height := imgSurf.W, imgSurf.H
+    imgSurf.Free()
+
+    return Image{Img: imgTex, Width: width, Height: height}
+}

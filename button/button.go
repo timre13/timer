@@ -11,11 +11,11 @@ import (
 var CHECK_ERR = common.CHECK_ERR
 
 type Button struct {
-    // TODO: Label image
     CentX, CentY    int32           // Center position
     Tooltip         string          // The text to display in a tooltip while hovering
     Radius          int32           // Radius
     Callback        func(*Button)   // The callback that is called when pressing the button
+    LabelImg        *common.Image   // The image that is copied on top of the button
     DefColor        *sdl.Color      // Normal color
     HoverColor      *sdl.Color      // Color while hovered
     HoverBdColor    *sdl.Color      // Border color while hovered
@@ -55,6 +55,14 @@ func (b *Button) Draw(rend *sdl.Renderer) {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.HoverColor)
     } else {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.DefColor)
+    }
+
+    // Don't draw out of the button and respect image size if smaller than button
+    width := int32(math.Min(float64(b.CentX*2), float64(b.LabelImg.Width)))
+    height := int32(math.Min(float64(b.CentX*2), float64(b.LabelImg.Height)))
+
+    if b.LabelImg != nil && b.LabelImg.Img != nil {
+        rend.Copy(b.LabelImg.Img, nil, &sdl.Rect{X: b.CentX-width/2, Y: b.CentY-height/2, W: width, H: height})
     }
 }
 
