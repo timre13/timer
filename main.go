@@ -110,21 +110,29 @@ type Button struct {
     DefColor        *sdl.Color      // Normal color
     HoverColor      *sdl.Color      // Color while hovered
     HoverBdColor    *sdl.Color      // Border color while hovered
+    mouseX, mouseY  int32           // The absolute mouse position, set by `UpdateMousePos()`
+    isMouseHovered  bool            // Set to true when the mouse is inside the button
 }
 
-func (b *Button) IsInside(x, y int32) bool {
+func (b *Button) isInside(x, y int32) bool {
     xDiff := float64(x-b.CentX)
     yDiff := float64(y-b.CentY)
     dist := math.Sqrt(xDiff*xDiff+yDiff*yDiff)
     return dist < float64(b.Radius)
 }
 
-func (b *Button) Draw(rend *sdl.Renderer, mouseX, mouseY int32) {
-    if b.IsInside(mouseX, mouseY) {
+func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32) {
+    b.mouseX = x
+    b.mouseY = y
+    b.isMouseHovered = b.isInside(x, y)
+}
+
+func (b *Button) Draw(rend *sdl.Renderer) {
+    if b.isMouseHovered {
         gfx.AACircleColor(rend, b.CentX, b.CentY, b.Radius+1, *b.HoverBdColor)
     }
 
-    if b.IsInside(mouseX, mouseY) {
+    if b.isMouseHovered {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.HoverColor)
     } else {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.DefColor)
@@ -140,12 +148,12 @@ func limit(x, min, max int) int {
     return x
 }
 
-func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font, mouseX, mouseY int32) {
-    if b.IsInside(mouseX, mouseY) {
+func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
+    if b.isMouseHovered {
         tooltipW, tooltipH, err := font.SizeUTF8(b.Tooltip)
         CHECK_ERR(err)
-        tooltipX := int32(limit(int(mouseX)+20, 0, WIN_W-tooltipW))
-        tooltipY := int32(limit(int(mouseY)+10, 0, WIN_H-tooltipH))
+        tooltipX := int32(limit(int(b.mouseX)+20, 0, WIN_W-tooltipW))
+        tooltipY := int32(limit(int(b.mouseY)+10, 0, WIN_H-tooltipH))
 
         gfx.RoundedBoxColor(rend, tooltipX, tooltipY, tooltipX+int32(tooltipW), tooltipY+int32(tooltipH), 2, COLOR_TOOLTIP_BG)
         CHECK_ERR(err)
@@ -204,7 +212,7 @@ func main() {
             break
         }
 
-        mouseX, mouseY, _ := sdl.GetMouseState()
+        mouseX, mouseY, mouseState := sdl.GetMouseState()
 
         rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
         rend.Clear()
@@ -213,6 +221,9 @@ func main() {
         drawRemTime(rend, remTimeFont, int(fullTimeMs-elapsedTimeMs))
         pauseBtn.Draw(rend, mouseX, mouseY)
         pauseBtn.DrawTooltip(rend, tooltipFont, mouseX, mouseY)
+        pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState)
+        pauseBtn.Draw(rend)
+        pauseBtn.DrawTooltip(rend, tooltipFont)
 
         rend.Present()
         elapsedTimeMs += fpsMan.RateTicks
