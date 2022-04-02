@@ -38,7 +38,7 @@ var COLOR_CLOCK_FG_DONE = sdl.Color{R:  86, G: 227, B: 159, A: 255}
 var COLOR_BTN           = sdl.Color{R:  37, G:  49, B:  65, A: 255}
 var COLOR_BTN_HOVER     = sdl.Color{R:  52, G:  69, B:  91, A: 255}
 var COLOR_BTN_HOVER_BD  = sdl.Color{R: 244, G: 185, B:  66, A: 255}
-var COLOR_TOOLTIP_BG    = sdl.Color{R:  82, G: 108, B: 142, A: 100}
+var COLOR_TOOLTIP_BG    = sdl.Color{R:  82, G: 108, B: 142, A: 200}
 
 func lerpInt(a int, b int, t float32) int {
     return int(math.Round(float64(float32(a) + t * float32(b - a))))
@@ -147,10 +147,7 @@ func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font, mouseX, mouseY 
         tooltipX := int32(limit(int(mouseX)+20, 0, WIN_W-tooltipW))
         tooltipY := int32(limit(int(mouseY)+10, 0, WIN_H-tooltipH))
 
-        // FIXME: Transparency is broken
-        err = rend.SetDrawColor(COLOR_TOOLTIP_BG.R, COLOR_TOOLTIP_BG.G, COLOR_TOOLTIP_BG.B, COLOR_TOOLTIP_BG.A)
-        CHECK_ERR(err)
-        err = rend.FillRect(&sdl.Rect{X: tooltipX, Y: tooltipY, W: int32(tooltipW), H: int32(tooltipH)})
+        gfx.RoundedBoxColor(rend, tooltipX, tooltipY, tooltipX+int32(tooltipW), tooltipY+int32(tooltipH), 2, COLOR_TOOLTIP_BG)
         CHECK_ERR(err)
         renderText(rend, font, b.Tooltip, &COLOR_FG, tooltipX, tooltipY, false)
     }
