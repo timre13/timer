@@ -4,6 +4,7 @@ import (
     "github.com/veandco/go-sdl2/sdl"
     "github.com/veandco/go-sdl2/gfx"
     "github.com/veandco/go-sdl2/ttf"
+    "github.com/gen2brain/beeep"
     "fmt"
     . "timer/consts"
     "timer/common"
@@ -117,7 +118,7 @@ func main() {
         }
         if remTimeMs <= 0 && !isPaused {
             isPaused = true
-            err = window.Flash(sdl.FLASH_UNTIL_FOCUSED)
+            err = beeep.Notify("Timer", "End of timer", "")
             WARN_ERR(err)
         }
         gfx.FramerateDelay(&fpsMan)
