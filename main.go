@@ -37,6 +37,14 @@ func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
     common.RenderText(rend, font, remTimeStr, &COLOR_FG, CLOCK_CENT_X, CLOCK_CENT_Y, true)
 }
 
+type SessionType int
+const (
+    SESSION_TYPE_WORK  SessionType = iota
+    SESSION_TYPE_BREAK SessionType = iota
+)
+
+var SESSTYPE_STRS = [...]string{"work", "break"}
+
 func main() {
     err := sdl.Init(sdl.INIT_VIDEO)
     PANIC_ERR(err)
@@ -60,9 +68,22 @@ func main() {
     var elapsedTimeMs float32
     fullTimeMs = 5000
     var isPaused bool
+    sessionType := SESSION_TYPE_WORK
+
+    switchSessionType := func() {
+        if sessionType == SESSION_TYPE_WORK {
+            sessionType = SESSION_TYPE_BREAK
+        } else if sessionType == SESSION_TYPE_BREAK {
+            sessionType = SESSION_TYPE_WORK
+        } else {
+            panic(sessionType)
+        }
+    }
 
     pauseBtnImg := common.LoadImage(rend, "img/pause_btn.png")
     startBtnImg := common.LoadImage(rend, "img/start_btn.png")
+    workSessionImg := common.LoadImage(rend, "img/work_icon.png")
+    breakSessionImg := common.LoadImage(rend, "img/break_icon.png")
 
     pauseBtn := button.Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
@@ -107,6 +128,19 @@ func main() {
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
         drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
         drawRemTime(rend, remTimeFont, remTimeMs)
+        var sessImg *common.Image
+        if sessionType == SESSION_TYPE_WORK {
+            sessImg = &workSessionImg
+        } else if sessionType == SESSION_TYPE_BREAK {
+            sessImg = &breakSessionImg
+        } else {
+            panic(sessionType)
+        }
+        rend.Copy(sessImg.Img, nil, &sdl.Rect{
+            X: CLOCK_CENT_X-sessImg.Width/2,
+            Y: CLOCK_CENT_Y+140-sessImg.Height,
+            W: sessImg.Width,
+            H: sessImg.Height})
 
         pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState)
         pauseBtn.Draw(rend)
@@ -117,9 +151,13 @@ func main() {
             elapsedTimeMs += fpsMan.RateTicks
         }
         if remTimeMs <= 0 && !isPaused {
-            isPaused = true
-            err = beeep.Notify("Timer", "End of timer", "")
+            err = beeep.Notify("Timer", "End of "+SESSTYPE_STRS[sessionType]+" session", "")
             WARN_ERR(err)
+            switchSessionType()
+            elapsedTimeMs = 0
+            // TODO: Work and break session with different lengths
+            //fullTimeMs =
+            // TODO: Wait for user to continue
         }
         gfx.FramerateDelay(&fpsMan)
     }
