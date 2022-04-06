@@ -44,6 +44,8 @@ const (
 )
 
 var SESSTYPE_STRS = [...]string{"work", "break"}
+// Specifies how long the different types of sessions are
+var SESS_DUR_MS = [...]float32{25*60*1000, 5*60*1000}
 
 func main() {
     err := sdl.Init(sdl.INIT_VIDEO)
@@ -64,9 +66,8 @@ func main() {
     tooltipFont, err := ttf.OpenFont(FONT_PATH, TOOLTIP_FONT_SIZE)
     PANIC_ERR(err)
 
-    var fullTimeMs float32
+    var fullTimeMs float32 = SESS_DUR_MS[SESSION_TYPE_WORK]
     var elapsedTimeMs float32
-    fullTimeMs = 5000
     var isPaused bool
     sessionType := SESSION_TYPE_WORK
 
@@ -155,8 +156,7 @@ func main() {
             WARN_ERR(err)
             switchSessionType()
             elapsedTimeMs = 0
-            // TODO: Work and break session with different lengths
-            //fullTimeMs =
+            fullTimeMs = SESS_DUR_MS[sessionType]
             // TODO: Wait for user to continue
         }
         gfx.FramerateDelay(&fpsMan)
