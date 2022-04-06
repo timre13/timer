@@ -149,7 +149,7 @@ func main() {
             W: sessImg.Width,
             H: sessImg.Height})
 
-        pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState)
+        pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
         pauseBtn.Draw(rend)
         pauseBtn.DrawTooltip(rend, tooltipFont)
 

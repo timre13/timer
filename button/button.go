@@ -22,7 +22,10 @@ type Button struct {
     mouseX, mouseY  int32           // The absolute mouse position, set by `UpdateMousePos()`
     mouseBtnState   uint32          // Bitmask of pressed mouse buttons
     isMouseHovered  bool            // Set to true when the mouse is inside the button
+    mouseHoverDurMs float32         // How long the button is hovered for
 }
+
+const BTN_TOOLT_DELAY_MS = 500
 
 func (b *Button) isInside(x, y int32) bool {
     xDiff := float64(x-b.CentX)
@@ -31,9 +34,19 @@ func (b *Button) isInside(x, y int32) bool {
     return dist < float64(b.Radius)
 }
 
-func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32) {
+func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32, frameTime float32) {
+    mouseMoved := (b.mouseX != x) || (b.mouseY != y)
     b.mouseX = x
     b.mouseY = y
+    b.isMouseHovered = b.isInside(x, y)
+
+    // We will show the tooltip with a delay and hide it when the mouse moved
+    if b.isMouseHovered && !mouseMoved {
+        b.mouseHoverDurMs += frameTime
+    } else {
+        b.mouseHoverDurMs = 0
+    }
+
     if b.isMouseHovered &&
     // If the left mouse button has just been pressed
     (b.mouseBtnState & sdl.ButtonLMask()) == 0 && (mouseBtnState & sdl.ButtonLMask()) != 0 {
@@ -43,14 +56,15 @@ func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32) {
         }
     }
     b.mouseBtnState = mouseBtnState
-    b.isMouseHovered = b.isInside(x, y)
 }
 
 func (b *Button) Draw(rend *sdl.Renderer) {
+    // Draw hover border
     if b.isMouseHovered {
         gfx.AACircleColor(rend, b.CentX, b.CentY, b.Radius+1, *b.HoverBdColor)
     }
 
+    // Fill with different color when hovered
     if b.isMouseHovered {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.HoverColor)
     } else {
@@ -76,7 +90,7 @@ func limit(x, min, max int) int {
 }
 
 func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
-    if b.isMouseHovered {
+    if b.isMouseHovered && b.mouseHoverDurMs >= BTN_TOOLT_DELAY_MS {
         tooltipW, tooltipH, err := font.SizeUTF8(b.Tooltip)
         PANIC_ERR(err)
         tooltipX := int32(limit(int(b.mouseX)+20, 0, WIN_W-tooltipW))
