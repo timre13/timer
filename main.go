@@ -107,6 +107,30 @@ func main() {
         updatePauseBtnLabel()
     }
 
+
+    sessTypeLabel := button.Button{
+        CentX: CLOCK_CENT_X,
+        CentY: CLOCK_CENT_Y+140,
+        Radius: 24,
+        DefColor: &COLOR_TRANSPARENT,
+        HoverColor: &COLOR_TRANSPARENT,
+        HoverBdColor: &COLOR_TRANSPARENT,
+        UseDefCurs: true,
+    }
+
+    updateSessTypeLabel := func() {
+        if sessionType == SESSION_TYPE_WORK {
+            sessTypeLabel.LabelImg = &workSessionImg
+            sessTypeLabel.Tooltip = "Work Session"
+        } else if sessionType == SESSION_TYPE_BREAK {
+            sessTypeLabel.LabelImg = &breakSessionImg
+            sessTypeLabel.Tooltip = "Break Session"
+        } else {
+            panic(sessionType)
+        }
+    }
+    updateSessTypeLabel()
+
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
     gfx.SetFramerate(&fpsMan, TARGET_FPS)
@@ -135,23 +159,14 @@ func main() {
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
         drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
         drawRemTime(rend, remTimeFont, remTimeMs)
-        var sessImg *common.Image
-        if sessionType == SESSION_TYPE_WORK {
-            sessImg = &workSessionImg
-        } else if sessionType == SESSION_TYPE_BREAK {
-            sessImg = &breakSessionImg
-        } else {
-            panic(sessionType)
-        }
-        rend.Copy(sessImg.Img, nil, &sdl.Rect{
-            X: CLOCK_CENT_X-sessImg.Width/2,
-            Y: CLOCK_CENT_Y+140-sessImg.Height,
-            W: sessImg.Width,
-            H: sessImg.Height})
 
         pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
         pauseBtn.Draw(rend)
         pauseBtn.DrawTooltip(rend, tooltipFont)
+
+        sessTypeLabel.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+        sessTypeLabel.Draw(rend)
+        sessTypeLabel.DrawTooltip(rend, tooltipFont)
 
         rend.Present()
         if !isPaused {
@@ -166,6 +181,7 @@ func main() {
             // Request the user to click the pause button
             isPaused = true
             updatePauseBtnLabel()
+            updateSessTypeLabel()
         }
         gfx.FramerateDelay(&fpsMan)
     }

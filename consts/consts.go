@@ -27,3 +27,4 @@ var COLOR_BTN_HOVER     = sdl.Color{R:  52, G:  69, B:  91, A: 255}
 var COLOR_BTN_HOVER_BD  = sdl.Color{R: 244, G: 185, B:  66, A: 255}
 var COLOR_TOOLTIP_BG    = sdl.Color{R:  82, G: 108, B: 142, A: 200}
 
+var COLOR_TRANSPARENT   = sdl.Color{R: 0, G: 0, B: 0, A: 0}
