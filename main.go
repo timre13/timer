@@ -88,18 +88,19 @@ func main() {
 
     pauseBtn := button.Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
-        Tooltip: "Pause",
-        LabelImg: &pauseBtnImg,
         Radius: BTN_RAD,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
 
     updatePauseBtnLabel := func() {
         if isPaused {
             pauseBtn.LabelImg = &startBtnImg
+            pauseBtn.Tooltip = "Start"
         } else {
             pauseBtn.LabelImg = &pauseBtnImg
+            pauseBtn.Tooltip = "Pause"
         }
     }
+    updatePauseBtnLabel()
 
     pauseBtn.Callback = func(b *button.Button) {
         isPaused = !isPaused
