@@ -92,13 +92,18 @@ func main() {
         LabelImg: &pauseBtnImg,
         Radius: BTN_RAD,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
-    pauseBtn.Callback = func(b *button.Button) {
-        isPaused = !isPaused
+
+    updatePauseBtnLabel := func() {
         if isPaused {
             pauseBtn.LabelImg = &startBtnImg
         } else {
             pauseBtn.LabelImg = &pauseBtnImg
         }
+    }
+
+    pauseBtn.Callback = func(b *button.Button) {
+        isPaused = !isPaused
+        updatePauseBtnLabel()
     }
 
     fpsMan := gfx.FPSmanager{}
@@ -157,7 +162,9 @@ func main() {
             switchSessionType()
             elapsedTimeMs = 0
             fullTimeMs = SESS_DUR_MS[sessionType]
-            // TODO: Wait for user to continue
+            // Request the user to click the pause button
+            isPaused = true
+            updatePauseBtnLabel()
         }
         gfx.FramerateDelay(&fpsMan)
     }
