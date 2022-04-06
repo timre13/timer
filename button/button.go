@@ -19,6 +19,7 @@ type Button struct {
     DefColor        *sdl.Color      // Normal color
     HoverColor      *sdl.Color      // Color while hovered
     HoverBdColor    *sdl.Color      // Border color while hovered
+    UseDefCurs      bool            // If true, the cursor is NOT set to a hand while hovering
     mouseX, mouseY  int32           // The absolute mouse position, set by `UpdateMousePos()`
     mouseBtnState   uint32          // Bitmask of pressed mouse buttons
     isMouseHovered  bool            // Set to true when the mouse is inside the button
@@ -38,7 +39,18 @@ func (b *Button) UpdateMouseState(x, y int32, mouseBtnState uint32, frameTime fl
     mouseMoved := (b.mouseX != x) || (b.mouseY != y)
     b.mouseX = x
     b.mouseY = y
-    b.isMouseHovered = b.isInside(x, y)
+    isHovered := b.isInside(x, y)
+    mouseEnteredOrLeft := (b.isMouseHovered != isHovered)
+    b.isMouseHovered = isHovered
+
+    // Set the cursor when the mouse enters/leaves the button
+    if mouseEnteredOrLeft {
+        if b.isMouseHovered && !b.UseDefCurs {
+            sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_HAND))
+        } else {
+            sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
+        }
+    }
 
     // We will show the tooltip with a delay and hide it when the mouse moved
     if b.isMouseHovered && !mouseMoved {
