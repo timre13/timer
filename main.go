@@ -68,7 +68,7 @@ func main() {
 
     var fullTimeMs float32 = SESS_DUR_MS[SESSION_TYPE_WORK]
     var elapsedTimeMs float32
-    var isPaused bool
+    isPaused := true
     sessionType := SESSION_TYPE_WORK
 
     switchSessionType := func() {
