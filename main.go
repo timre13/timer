@@ -6,6 +6,7 @@ import (
     "github.com/veandco/go-sdl2/ttf"
     "github.com/gen2brain/beeep"
     "fmt"
+    "math"
     . "timer/consts"
     "timer/common"
     "timer/button"
@@ -20,10 +21,38 @@ func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     if elapsedPerc > 100 {
         elapsedPerc = 100
     }
-    fgColor := common.LerpColors(&COLOR_CLOCK_FG, &COLOR_CLOCK_FG_DONE, elapsedPerc/100)
 
     gfx.FilledCircleColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_RAD, COLOR_CLOCK_BG)
-    gfx.FilledPieColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_RAD, -90, -90+int32(elapsedPerc/100*360), fgColor)
+
+    // Draw the arc
+    {
+        fgColor := common.LerpColors(&COLOR_CLOCK_FG, &COLOR_CLOCK_FG_DONE, elapsedPerc/100)
+
+        const startRad = -math.Pi/2
+        endRad := startRad+float64(elapsedPerc/100*math.Pi*2)
+
+        xcoords := []int16{}
+        ycoords := []int16{}
+
+        // Calculate arc vertices
+        increment := CLOCK_POLY_STEP
+        for i := startRad; i <= endRad; i += increment {
+            x := math.Cos(i)
+            y := math.Sin(i)
+            xcoords = append(xcoords, int16(x*CLOCK_RAD)+CLOCK_CENT_X)
+            ycoords = append(ycoords, int16(y*CLOCK_RAD)+CLOCK_CENT_Y)
+            if endRad-i < increment { // Switch to a smaller incrementation to prevent flickering at the ends
+                increment = CLOCK_POLY_STEP_S
+            }
+        }
+
+        // Add the center coords
+        xcoords = append(xcoords, CLOCK_CENT_X)
+        ycoords = append(ycoords, CLOCK_CENT_Y)
+
+        gfx.FilledPolygonColor(rend, xcoords, ycoords, fgColor)
+    }
+
     gfx.FilledCircleColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_INS_RAD, COLOR_BG)
 }
 

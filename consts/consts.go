@@ -10,6 +10,8 @@ const CLOCK_CENT_X      = 250
 const CLOCK_CENT_Y      = 250
 const CLOCK_RAD         = 230
 const CLOCK_INS_RAD     = 170
+const CLOCK_POLY_STEP   = 0.02 // The less the step, the more polygons the clock will have
+const CLOCK_POLY_STEP_S = 0.001 // The less the small step, the less flickering the clock will have at the arc's ends
 const BTN_RAD           = 40
 const BTN_CENT_Y        = WIN_H-BTN_RAD-20
 
