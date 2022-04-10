@@ -7,6 +7,8 @@ import (
     "math"
     "fmt"
     "runtime/debug"
+    "os"
+    "path/filepath"
 )
 
 func PANIC_ERR(err error) {
@@ -23,6 +25,14 @@ func WARN_ERR(err error) {
         debug.PrintStack()
         fmt.Println("--------- end ---------")
     }
+}
+
+func GetExeDir() string {
+    path, err := os.Executable()
+    PANIC_ERR(err)
+
+    dirPath := filepath.Dir(path)
+    return dirPath
 }
 
 func lerpInt(a int, b int, t float32) int {

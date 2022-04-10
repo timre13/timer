@@ -7,6 +7,7 @@ import (
     "github.com/gen2brain/beeep"
     "fmt"
     "math"
+    "path/filepath"
     . "timer/consts"
     "timer/common"
     "timer/button"
@@ -77,6 +78,8 @@ var SESSTYPE_STRS = [...]string{"work", "break"}
 var SESS_DUR_MS = [...]float32{25*60*1000, 5*60*1000}
 
 func main() {
+    exeDir := common.GetExeDir()
+
     err := sdl.Init(sdl.INIT_VIDEO)
     PANIC_ERR(err)
     err = ttf.Init()
@@ -110,10 +113,10 @@ func main() {
         }
     }
 
-    pauseBtnImg := common.LoadImage(rend, "img/pause_btn.png")
-    startBtnImg := common.LoadImage(rend, "img/start_btn.png")
-    workSessionImg := common.LoadImage(rend, "img/work_icon.png")
-    breakSessionImg := common.LoadImage(rend, "img/break_icon.png")
+    pauseBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/pause_btn.png"))
+    startBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/start_btn.png"))
+    workSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/work_icon.png"))
+    breakSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/break_icon.png"))
 
     pauseBtn := button.Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
