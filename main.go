@@ -206,8 +206,10 @@ func main() {
             elapsedTimeMs += fpsMan.RateTicks
         }
         if remTimeMs <= 0 && !isPaused {
-            err = beeep.Notify("Timer", "End of "+SESSTYPE_STRS[sessionType]+" session", "")
-            WARN_ERR(err)
+            if conf.SessEndShowNotif {
+                err = beeep.Notify("Timer", "End of "+SESSTYPE_STRS[sessionType]+" session", "")
+                WARN_ERR(err)
+            }
             switchSessionType()
             elapsedTimeMs = 0
             fullTimeMs = float32(conf.GetSessLenMs(sessionType))

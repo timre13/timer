@@ -12,6 +12,7 @@ var CONF_DEF_WORK_SESS_LEN_MIN      = 25
 var CONF_DEF_BREAK_SESS_LEN_MIN     = 5
 var CONF_DEF_AUTO_START_WORK_SESS   = true
 var CONF_DEF_AUTO_START_BREAK_SESS  = true
+var CONF_DEF_SESS_END_SHOW_NOTIF    = true
 
 type Config struct {
     WorkSessDurMin          int
@@ -19,14 +20,17 @@ type Config struct {
 
     BreakSessDurMin         int
     AutoStartBreakSess      bool
+
+    SessEndShowNotif        bool
 }
 
 func LoadConf(path string) Config {
     fmt.Printf("ConfReader :: Loading config file: \"%s\"\n", path)
 
     conf := Config{}
-    conf.AutoStartWorkSess = CONF_DEF_AUTO_START_WORK_SESS
-    conf.AutoStartBreakSess = CONF_DEF_AUTO_START_BREAK_SESS
+    conf.AutoStartWorkSess      = CONF_DEF_AUTO_START_WORK_SESS
+    conf.AutoStartBreakSess     = CONF_DEF_AUTO_START_BREAK_SESS
+    conf.SessEndShowNotif       = CONF_DEF_SESS_END_SHOW_NOTIF
 
     fileContent, err := os.ReadFile(path)
     if err != nil {
