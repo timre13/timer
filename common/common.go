@@ -11,6 +11,12 @@ import (
     "path/filepath"
 )
 
+type SessionType int
+const (
+    SESSION_TYPE_WORK  SessionType = iota
+    SESSION_TYPE_BREAK SessionType = iota
+)
+
 func PANIC_ERR(err error) {
     if err != nil {
         sdl.Quit()
@@ -33,6 +39,10 @@ func GetExeDir() string {
 
     dirPath := filepath.Dir(path)
     return dirPath
+}
+
+func MinsToMillisecs(mins int) int {
+    return mins*60*1000
 }
 
 func lerpInt(a int, b int, t float32) int {
@@ -84,6 +94,7 @@ type Image struct {
  *     Height
 */
 func LoadImage(rend *sdl.Renderer, path string) Image {
+    fmt.Printf("Loading image: \"%s\"\n", path)
     imgSurf, err := img.Load(path)
     PANIC_ERR(err)
 

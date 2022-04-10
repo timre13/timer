@@ -11,6 +11,7 @@ import (
     . "timer/consts"
     "timer/common"
     "timer/button"
+    "timer/confreader"
 )
 var PANIC_ERR = common.PANIC_ERR
 var WARN_ERR = common.WARN_ERR
@@ -67,18 +68,18 @@ func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
     common.RenderText(rend, font, remTimeStr, &COLOR_FG, CLOCK_CENT_X, CLOCK_CENT_Y, true)
 }
 
-type SessionType int
-const (
-    SESSION_TYPE_WORK  SessionType = iota
-    SESSION_TYPE_BREAK SessionType = iota
-)
-
 var SESSTYPE_STRS = [...]string{"work", "break"}
-// Specifies how long the different types of sessions are
-var SESS_DUR_MS = [...]float32{25*60*1000, 5*60*1000}
 
 func main() {
     exeDir := common.GetExeDir()
+
+    var confPath string
+    if filepath.IsAbs(CONF_PATH) { // Absolute path
+        confPath = CONF_PATH
+    } else { // Relative path
+        confPath = filepath.Join(exeDir, CONF_PATH)
+    }
+    conf := confreader.LoadConf(confPath)
 
     err := sdl.Init(sdl.INIT_VIDEO)
     PANIC_ERR(err)
@@ -98,16 +99,16 @@ func main() {
     tooltipFont, err := ttf.OpenFont(FONT_PATH, TOOLTIP_FONT_SIZE)
     PANIC_ERR(err)
 
-    var fullTimeMs float32 = SESS_DUR_MS[SESSION_TYPE_WORK]
+    var fullTimeMs float32 = float32(conf.GetSessLenMs(common.SESSION_TYPE_WORK))
     var elapsedTimeMs float32
-    isPaused := true
-    sessionType := SESSION_TYPE_WORK
+    isPaused := false
+    sessionType := common.SESSION_TYPE_WORK
 
     switchSessionType := func() {
-        if sessionType == SESSION_TYPE_WORK {
-            sessionType = SESSION_TYPE_BREAK
-        } else if sessionType == SESSION_TYPE_BREAK {
-            sessionType = SESSION_TYPE_WORK
+        if sessionType == common.SESSION_TYPE_WORK {
+            sessionType = common.SESSION_TYPE_BREAK
+        } else if sessionType == common.SESSION_TYPE_BREAK {
+            sessionType = common.SESSION_TYPE_WORK
         } else {
             panic(sessionType)
         }
@@ -151,10 +152,10 @@ func main() {
     }
 
     updateSessTypeLabel := func() {
-        if sessionType == SESSION_TYPE_WORK {
+        if sessionType == common.SESSION_TYPE_WORK {
             sessTypeLabel.LabelImg = &workSessionImg
             sessTypeLabel.Tooltip = "Work Session"
-        } else if sessionType == SESSION_TYPE_BREAK {
+        } else if sessionType == common.SESSION_TYPE_BREAK {
             sessTypeLabel.LabelImg = &breakSessionImg
             sessTypeLabel.Tooltip = "Break Session"
         } else {
@@ -209,9 +210,14 @@ func main() {
             WARN_ERR(err)
             switchSessionType()
             elapsedTimeMs = 0
-            fullTimeMs = SESS_DUR_MS[sessionType]
-            // Request the user to click the pause button
-            isPaused = true
+            fullTimeMs = float32(conf.GetSessLenMs(sessionType))
+            // Request the user to click the pause button if it is configured
+            switch sessionType {
+            case common.SESSION_TYPE_WORK:
+                isPaused = !conf.AutoStartWorkSess
+            case common.SESSION_TYPE_BREAK:
+                isPaused = !conf.AutoStartBreakSess
+            }
             updatePauseBtnLabel()
             updateSessTypeLabel()
         }
@@ -222,4 +228,6 @@ func main() {
     tooltipFont.Close()
     ttf.Quit()
     sdl.Quit()
+
+    confreader.WriteConf(confPath, &conf)
 }

@@ -2,6 +2,8 @@ package consts
 
 import "github.com/veandco/go-sdl2/sdl"
 
+const CONF_PATH         = "config.json"
+
 const TARGET_FPS        = 30
 
 const WIN_W             = 500
