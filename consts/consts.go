@@ -16,10 +16,12 @@ const CLOCK_POLY_STEP   = 0.02 // The less the step, the more polygons the clock
 const CLOCK_POLY_STEP_S = 0.001 // The less the small step, the less flickering the clock will have at the arc's ends
 const BTN_RAD           = 40
 const BTN_CENT_Y        = WIN_H-BTN_RAD-20
+const BTN_SMALL_RAD     = 16
 
 const FONT_PATH             = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 const REM_TIME_FONT_SIZE    = 36
 const TOOLTIP_FONT_SIZE     = 18
+const CONFWIN_FONT_SIZE     = 14
 
 var COLOR_BG            = sdl.Color{R:   4, G:  13, B:  35, A: 255}
 var COLOR_FG            = sdl.Color{R: 247, G: 247, B: 255, A: 255}

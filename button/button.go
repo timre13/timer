@@ -84,8 +84,8 @@ func (b *Button) Draw(rend *sdl.Renderer) {
     }
 
     // Don't draw out of the button and respect image size if smaller than button
-    width := int32(math.Min(float64(b.CentX*2), float64(b.LabelImg.Width)))
-    height := int32(math.Min(float64(b.CentX*2), float64(b.LabelImg.Height)))
+    width := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Width)))
+    height := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Height)))
 
     if b.LabelImg != nil && b.LabelImg.Img != nil {
         rend.Copy(b.LabelImg.Img, nil, &sdl.Rect{X: b.CentX-width/2, Y: b.CentY-height/2, W: width, H: height})
@@ -110,6 +110,6 @@ func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
 
         gfx.RoundedBoxColor(rend, tooltipX, tooltipY, tooltipX+int32(tooltipW), tooltipY+int32(tooltipH), 2, COLOR_TOOLTIP_BG)
         PANIC_ERR(err)
-        common.RenderText(rend, font, b.Tooltip, &COLOR_FG, tooltipX, tooltipY, false)
+        common.RenderText(rend, font, b.Tooltip, &COLOR_FG, tooltipX, tooltipY, false, false)
     }
 }

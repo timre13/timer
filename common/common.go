@@ -58,18 +58,21 @@ func LerpColors(x *sdl.Color, y *sdl.Color, t float32) sdl.Color {
     }
 }
 
-func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32, areCoordsCent bool) {
+func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32, isXCent bool, isYCent bool) {
     textSurf, err := font.RenderUTF8Blended(str, *color)
     PANIC_ERR(err)
     textTex, err := rend.CreateTextureFromSurface(textSurf)
     PANIC_ERR(err)
 
     var rectX, rectY int32
-    if areCoordsCent {
+    if isXCent {
         rectX = x-textSurf.W/2
-        rectY = y-textSurf.H/2
     } else {
         rectX = x
+    }
+    if isYCent {
+        rectY = y-textSurf.H/2
+    } else {
         rectY = y
     }
 

@@ -65,7 +65,44 @@ func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
     } else {
         remTimeStr = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
     }
-    common.RenderText(rend, font, remTimeStr, &COLOR_FG, CLOCK_CENT_X, CLOCK_CENT_Y, true)
+    common.RenderText(rend, font, remTimeStr, &COLOR_FG, CLOCK_CENT_X, CLOCK_CENT_Y, true, true)
+}
+
+func drawConfWindow(rend *sdl.Renderer, font *ttf.Font, conf *confreader.Config) {
+    gfx.RoundedBoxColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: COLOR_CLOCK_BG.R, G: COLOR_CLOCK_BG.G, B: COLOR_CLOCK_BG.B, A: 250})
+    gfx.RoundedRectangleColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: 255, G: 255, B: 255, A: 250})
+
+    _lineI := 0
+    renderText := func(text string, breakLine bool, center bool) {
+        if text == "" {
+            _lineI++
+            return
+        }
+        if center {
+            common.RenderText(rend, font, text, &COLOR_FG, WIN_W/2, 30+int32(_lineI*font.Height()), true, false)
+        } else {
+            common.RenderText(rend, font, text, &COLOR_FG, 30, 30+int32(_lineI*font.Height()), false, false)
+        }
+        if breakLine {
+            _lineI++
+        }
+    }
+
+    renderText("SETTINGS", true, true)
+
+    renderText("", true, false)
+    renderText("Work Session", true, false)
+    renderText(fmt.Sprintf("    Duration:          %dm", conf.WorkSessDurMin), true, false)
+    renderText(fmt.Sprintf("    Auto start:        %t", conf.AutoStartWorkSess), true, false)
+
+    renderText("", true, false)
+    renderText("Break Session", true, false)
+    renderText(fmt.Sprintf("    Duration:          %dm", conf.BreakSessDurMin), true, false)
+    renderText(fmt.Sprintf("    Auto start:        %t", conf.AutoStartBreakSess), true, false)
+
+    renderText("", true, false)
+    renderText("Misc", true, false)
+    renderText(fmt.Sprintf("    Show notif.:       %t", conf.SessEndShowNotif), true, false)
 }
 
 var SESSTYPE_STRS = [...]string{"work", "break"}
@@ -98,11 +135,16 @@ func main() {
     PANIC_ERR(err)
     tooltipFont, err := ttf.OpenFont(FONT_PATH, TOOLTIP_FONT_SIZE)
     PANIC_ERR(err)
+    confWinFont, err := ttf.OpenFont(FONT_PATH, CONFWIN_FONT_SIZE)
+    PANIC_ERR(err)
 
     var fullTimeMs float32 = float32(conf.GetSessLenMs(common.SESSION_TYPE_WORK))
     var elapsedTimeMs float32
     isPaused := false
     sessionType := common.SESSION_TYPE_WORK
+    isConfWinOpen := false
+    // TODO
+    isConfWinOpen = true
 
     switchSessionType := func() {
         if sessionType == common.SESSION_TYPE_WORK {
@@ -116,6 +158,7 @@ func main() {
 
     pauseBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/pause_btn.png"))
     startBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/start_btn.png"))
+    settingsBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/settings_btn.png"))
     workSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/work_icon.png"))
     breakSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/break_icon.png"))
 
@@ -139,6 +182,18 @@ func main() {
         isPaused = !isPaused
         updatePauseBtnLabel()
     }
+
+
+    settingsBtn := button.Button{
+        CentX: WIN_W-BTN_SMALL_RAD-4, CentY: BTN_SMALL_RAD+4,
+        Radius: BTN_SMALL_RAD,
+        Tooltip: "Settings",
+        Callback: func(*button.Button) {
+            isConfWinOpen = true
+            sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
+        },
+        LabelImg: &settingsBtnImg,
+        DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
 
 
     sessTypeLabel := button.Button{
@@ -190,16 +245,25 @@ func main() {
         rend.Clear()
 
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
-        drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
-        drawRemTime(rend, remTimeFont, remTimeMs)
 
-        pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
-        pauseBtn.Draw(rend)
-        pauseBtn.DrawTooltip(rend, tooltipFont)
+        if !isConfWinOpen {
+            drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
+            drawRemTime(rend, remTimeFont, remTimeMs)
 
-        sessTypeLabel.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
-        sessTypeLabel.Draw(rend)
-        sessTypeLabel.DrawTooltip(rend, tooltipFont)
+            pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            settingsBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            sessTypeLabel.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+
+            pauseBtn.Draw(rend)
+            settingsBtn.Draw(rend)
+            sessTypeLabel.Draw(rend)
+
+            pauseBtn.DrawTooltip(rend, tooltipFont)
+            settingsBtn.DrawTooltip(rend, tooltipFont)
+            sessTypeLabel.DrawTooltip(rend, tooltipFont)
+        } else {
+            drawConfWindow(rend, confWinFont, &conf)
+        }
 
         rend.Present()
         if !isPaused {
