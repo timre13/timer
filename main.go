@@ -10,7 +10,10 @@ import (
     "path/filepath"
     . "timer/consts"
     "timer/common"
+    "timer/iwidget"
     "timer/button"
+    //"timer/entry"
+    "timer/label"
     "timer/confreader"
 )
 var PANIC_ERR = common.PANIC_ERR
@@ -58,16 +61,7 @@ func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     gfx.FilledCircleColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_INS_RAD, COLOR_BG)
 }
 
-func drawRemTime(rend *sdl.Renderer, font *ttf.Font, remTimeMs int) {
-    var remTimeStr string
-    if remTimeMs <= 0 {
-        remTimeStr = "--:--"
-    } else {
-        remTimeStr = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
-    }
-    common.RenderText(rend, font, remTimeStr, &COLOR_FG, CLOCK_CENT_X, CLOCK_CENT_Y, true, true)
-}
-
+/*
 func drawConfWindow(rend *sdl.Renderer, font *ttf.Font, conf *confreader.Config) {
     gfx.RoundedBoxColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: COLOR_CLOCK_BG.R, G: COLOR_CLOCK_BG.G, B: COLOR_CLOCK_BG.B, A: 250})
     gfx.RoundedRectangleColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: 255, G: 255, B: 255, A: 250})
@@ -92,18 +86,19 @@ func drawConfWindow(rend *sdl.Renderer, font *ttf.Font, conf *confreader.Config)
 
     renderText("", true, false)
     renderText("Work Session", true, false)
-    renderText(fmt.Sprintf("    Duration:          %dm", conf.WorkSessDurMin), true, false)
-    renderText(fmt.Sprintf("    Auto start:        %t", conf.AutoStartWorkSess), true, false)
+    renderText("    Duration:", true, false)
+    renderText("    Auto start:", true, false)
 
     renderText("", true, false)
     renderText("Break Session", true, false)
-    renderText(fmt.Sprintf("    Duration:          %dm", conf.BreakSessDurMin), true, false)
-    renderText(fmt.Sprintf("    Auto start:        %t", conf.AutoStartBreakSess), true, false)
+    renderText("    Duration:", true, false)
+    renderText("    Auto start:", true, false)
 
     renderText("", true, false)
     renderText("Misc", true, false)
-    renderText(fmt.Sprintf("    Show notif.:       %t", conf.SessEndShowNotif), true, false)
+    renderText("    Show notif.:", true, false)
 }
+*/
 
 var SESSTYPE_STRS = [...]string{"work", "break"}
 
@@ -162,10 +157,13 @@ func main() {
     workSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/work_icon.png"))
     breakSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/break_icon.png"))
 
+    widgetPtrs := []iwidget.IWidget{}
+
     pauseBtn := button.Button{
         CentX: CLOCK_CENT_X, CentY: BTN_CENT_Y,
         Radius: BTN_RAD,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    widgetPtrs = append(widgetPtrs, &pauseBtn)
 
     updatePauseBtnLabel := func() {
         if isPaused {
@@ -194,6 +192,7 @@ func main() {
         },
         LabelImg: &settingsBtnImg,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    widgetPtrs = append(widgetPtrs, &settingsBtn)
 
 
     sessTypeLabel := button.Button{
@@ -205,6 +204,7 @@ func main() {
         HoverBdColor: &COLOR_TRANSPARENT,
         UseDefCurs: true,
     }
+    widgetPtrs = append(widgetPtrs, &sessTypeLabel)
 
     updateSessTypeLabel := func() {
         if sessionType == common.SESSION_TYPE_WORK {
@@ -218,6 +218,14 @@ func main() {
         }
     }
     updateSessTypeLabel()
+
+    remTimeLabelW, remTimeLabelH, err := remTimeFont.SizeUTF8("00:00")
+    PANIC_ERR(err)
+    remTimeLabel := label.Label{
+        Text: "--:--",
+        XPos: CLOCK_CENT_X-int32(remTimeLabelW)/2, YPos: CLOCK_CENT_Y-int32(remTimeLabelH)/2,
+        Font: remTimeFont, FgColor: &COLOR_FG}
+    widgetPtrs = append(widgetPtrs, &remTimeLabel)
 
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
@@ -246,23 +254,22 @@ func main() {
 
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
 
-        if !isConfWinOpen {
+        //if !isConfWinOpen {
+        if isConfWinOpen {
             drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
-            drawRemTime(rend, remTimeFont, remTimeMs)
+            remTimeLabel.Text = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
 
-            pauseBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
-            settingsBtn.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
-            sessTypeLabel.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
-
-            pauseBtn.Draw(rend)
-            settingsBtn.Draw(rend)
-            sessTypeLabel.Draw(rend)
-
-            pauseBtn.DrawTooltip(rend, tooltipFont)
-            settingsBtn.DrawTooltip(rend, tooltipFont)
-            sessTypeLabel.DrawTooltip(rend, tooltipFont)
+            for _, w := range widgetPtrs {
+                w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            }
+            for _, w := range widgetPtrs {
+                w.Draw(rend)
+            }
+            for _, w := range widgetPtrs {
+                w.DrawTooltip(rend, tooltipFont)
+            }
         } else {
-            drawConfWindow(rend, confWinFont, &conf)
+            //drawConfWindow(rend, confWinFont, &conf)
         }
 
         rend.Present()

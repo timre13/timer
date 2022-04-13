@@ -7,6 +7,7 @@ import (
     "math"
     . "timer/consts"
     "timer/common"
+    "timer/iwidget"
 )
 var PANIC_ERR = common.PANIC_ERR
 
@@ -25,6 +26,7 @@ type Button struct {
     isMouseHovered  bool            // Set to true when the mouse is inside the button
     mouseHoverDurMs float32         // How long the button is hovered for
 }
+var _ iwidget.IWidget = (*Button)(nil)
 
 const BTN_TOOLT_DELAY_MS = 500
 
