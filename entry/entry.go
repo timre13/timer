@@ -37,7 +37,7 @@ func (e *Entry) UpdateMouseState(x, y int32, mouseBtnState uint32, frameTime flo
     // Set the cursor when the mouse enters/leaves the button
     if mouseEnteredOrLeft {
         if e.isMouseHovered {
-            sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_HAND))
+            sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_IBEAM))
         } else {
             sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
         }
