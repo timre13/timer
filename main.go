@@ -285,7 +285,22 @@ func main() {
                     focusedConfWidgetPtr.(*entry.Entry).HandleKeyPress(event.(*sdl.KeyboardEvent).Keysym.Sym)
                 }
 
-            // TODO: Implement activating Entry widgets by clicking on them
+            case sdl.MOUSEBUTTONDOWN:
+                if isConfWinOpen {
+                    for _, w := range confWidgetPtrs {
+                        switch w.(type) {
+                        case *entry.Entry:
+                            entryw := w.(*entry.Entry)
+                            mx := event.(*sdl.MouseButtonEvent).X
+                            my := event.(*sdl.MouseButtonEvent).Y
+                            if entryw.IsInside(mx, my) {
+                                focusedConfWidgetPtr.(*entry.Entry).SetFocused(false)
+                                entryw.SetFocused(true)
+                                focusedConfWidgetPtr = w
+                            }
+                        }
+                    }
+                }
             }
         }
         if !running {

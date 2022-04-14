@@ -142,4 +142,6 @@ func (e *Entry) MoveCursToEnd() {
 
 func (e *Entry) SetFocused(focused bool) {
     e.isFocused = focused
+    e.isCursorShown = true
+    e.untilCursToggle = ENTRY_CURS_BLINK_DELAY_MS
 }
