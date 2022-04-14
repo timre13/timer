@@ -8,6 +8,8 @@ import (
     "timer/iwidget"
 )
 
+const ENTRY_CURS_BLINK_DELAY_MS = 500
+
 type Entry struct {
     XPos, YPos      int32           // Position of the top left corner
     Width           int32           // Width
@@ -19,6 +21,9 @@ type Entry struct {
     mouseBtnState   uint32          // Bitmask of pressed mouse buttons
     isMouseHovered  bool            // Set to true when the mouse is inside the button
     cursorCharPos   int
+    isFocused       bool
+    isCursorShown   bool
+    untilCursToggle float32
 }
 var _ iwidget.IWidget = (*Entry)(nil)
 
@@ -43,14 +48,15 @@ func (e *Entry) UpdateMouseState(x, y int32, mouseBtnState uint32, frameTime flo
         }
     }
 
-    if e.isMouseHovered &&
-    // If the left mouse button has just been pressed
-    (e.mouseBtnState & sdl.ButtonLMask()) == 0 && (mouseBtnState & sdl.ButtonLMask()) != 0 {
-    }
     e.mouseBtnState = mouseBtnState
 }
 
 func (e *Entry) Draw(rend *sdl.Renderer) {
+    // Draw an extra outline if the widget has keyboard focus
+    if e.isFocused {
+        gfx.BoxColor(rend, e.XPos-1, e.YPos-1, e.XPos+e.Width+1, e.YPos+int32(e.Font.Height())+1, sdl.Color{R: 200, G: 200, B: 255, A: 255})
+    }
+
     gfx.BoxColor(rend, e.XPos, e.YPos, e.XPos+e.Width, e.YPos+int32(e.Font.Height()), *e.BgColor)
     gfx.RectangleColor(rend, e.XPos, e.YPos, e.XPos+e.Width, e.YPos+int32(e.Font.Height()), *e.FgColor)
 
@@ -62,35 +68,57 @@ func (e *Entry) Draw(rend *sdl.Renderer) {
         cursXOffs, _, err = e.Font.SizeUTF8(e.Text[:e.cursorCharPos])
         common.PANIC_ERR(err)
     }
-    gfx.BoxColor(rend, e.XPos+int32(cursXOffs)+2, e.YPos, e.XPos+int32(cursXOffs)+2, e.YPos+int32(e.Font.Height()), *e.FgColor)
+    if e.isFocused && e.isCursorShown {
+        // Draw cursor
+        gfx.BoxColor(rend, e.XPos+int32(cursXOffs)+2, e.YPos, e.XPos+int32(cursXOffs)+2, e.YPos+int32(e.Font.Height()), *e.FgColor)
+    }
 }
 
 func (e *Entry) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
 }
 
 func (e *Entry) HandleTextInput(input string) {
+    if !e.isFocused {
+        panic("Not focused Entry got text input")
+    }
+
     e.Text = e.Text[:e.cursorCharPos] + input + e.Text[e.cursorCharPos:]
     e.cursorCharPos++
+    e.isCursorShown = true
+    e.untilCursToggle = ENTRY_CURS_BLINK_DELAY_MS
 }
 
 func (e *Entry) HandleKeyPress(keycode sdl.Keycode) {
+    if !e.isFocused {
+        panic("Not focused Entry got keyboard input")
+    }
+
+    showCursor := func() {
+        e.isCursorShown = true
+        e.untilCursToggle = ENTRY_CURS_BLINK_DELAY_MS
+    }
+
     switch keycode {
     case sdl.K_RIGHT:
         e.cursorCharPos++
+        showCursor()
 
     case sdl.K_LEFT:
         e.cursorCharPos--
+        showCursor()
 
     case sdl.K_BACKSPACE:
         if e.cursorCharPos > 0 {
             e.Text = e.Text[:e.cursorCharPos-1] + e.Text[e.cursorCharPos:]
             e.cursorCharPos--
         }
+        showCursor()
 
     case sdl.K_DELETE:
         if e.cursorCharPos < len(e.Text) {
             e.Text = e.Text[:e.cursorCharPos] + e.Text[e.cursorCharPos+1:]
         }
+        showCursor()
     }
 
     if e.cursorCharPos < 0 {
@@ -98,4 +126,20 @@ func (e *Entry) HandleKeyPress(keycode sdl.Keycode) {
     } else if e.cursorCharPos > len(e.Text) {
         e.cursorCharPos = len(e.Text)
     }
+}
+
+func (e *Entry) Tick(frameTime float32) {
+    e.untilCursToggle -= frameTime
+    if e.untilCursToggle < 0 {
+        e.isCursorShown = !e.isCursorShown
+        e.untilCursToggle = ENTRY_CURS_BLINK_DELAY_MS
+    }
+}
+
+func (e *Entry) MoveCursToEnd() {
+    e.cursorCharPos = len(e.Text)
+}
+
+func (e *Entry) SetFocused(focused bool) {
+    e.isFocused = focused
 }
