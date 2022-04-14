@@ -206,7 +206,8 @@ func main() {
         var _widget iwidget.IWidget
         lineI := int32(0)
         addLabelWidget := func(text string, center bool) {
-            _widget = &label.Label{Font: confWinFont, XPos: 30, YPos: 30+int32(float32(confWinFont.Height())*1.5)*lineI, Text: text, FgColor: &COLOR_FG}
+            _widget = &label.Label{Font: confWinFont, XPos: 30, YPos: 30+int32(float32(confWinFont.Height())*1.2)*lineI,
+                    Text: text, FgColor: &COLOR_FG}
             if center {
                 _widget.(*label.Label).XPos = WIN_W/2-getTextWidth(confWinFont, _widget.(*label.Label).Text)/2 // Center label
             }
@@ -215,7 +216,8 @@ func main() {
         }
 
         addEntryWidget := func(value string) *entry.Entry {
-            _widget = &entry.Entry{Font: confWinFont, XPos: 200, YPos: 30+int32(float32(confWinFont.Height())*1.5)*(lineI-1), Width: 50, BgColor: &COLOR_BTN, FgColor: &COLOR_FG}
+            _widget = &entry.Entry{Font: confWinFont, XPos: 180, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+                    Width: 30, BgColor: &COLOR_BTN, FgColor: &COLOR_FG}
             _widget.(*entry.Entry).Text = value
             _widget.(*entry.Entry).MoveCursToEnd()
             confWidgetPtrs = append(confWidgetPtrs, _widget)
@@ -223,7 +225,7 @@ func main() {
         }
 
         addCheckboxWidget := func(value bool) *checkbox.CheckBox {
-            _widget = &checkbox.CheckBox{XPos: 200, YPos: 30+int32(float32(confWinFont.Height())*1.5)*(lineI-1),
+            _widget = &checkbox.CheckBox{XPos: 180, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
                     BgColor: &COLOR_BTN, FgColor: &COLOR_FG, HoverBgColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
             _widget.(*checkbox.CheckBox).Value = value
             confWidgetPtrs = append(confWidgetPtrs, _widget)
@@ -238,11 +240,21 @@ func main() {
         addLabelWidget("Work Session", false)
         addLabelWidget("    Duration:", false)
         workSessDurMinEntry := addEntryWidget(fmt.Sprint(conf.WorkSessDurMin))
+        { // Add suffix label
+            _widget = &label.Label{Font: confWinFont, XPos: 212, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+                    Text: "minutes", FgColor: &COLOR_FG}
+            confWidgetPtrs = append(confWidgetPtrs, _widget)
+        }
         addLabelWidget("    Auto start:", false)
         autoStartWorkSessCheckb := addCheckboxWidget(conf.AutoStartWorkSess)
         lineI++
         addLabelWidget("Break Session", false)
         addLabelWidget("    Duration:", false)
+        { // Add suffix label
+            _widget = &label.Label{Font: confWinFont, XPos: 212, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+                    Text: "minutes", FgColor: &COLOR_FG}
+            confWidgetPtrs = append(confWidgetPtrs, _widget)
+        }
         breakSessDurMinEntry := addEntryWidget(fmt.Sprint(conf.BreakSessDurMin))
         addLabelWidget("    Auto start:", false)
         autoStartBreakSessCheckb := addCheckboxWidget(conf.AutoStartBreakSess)
