@@ -35,7 +35,7 @@ func (e *Entry) IsInside(x, y int32) bool {
 func (e *Entry) UpdateMouseState(x, y int32, mouseBtnState uint32, frameTime float32) {
     e.mouseX = x
     e.mouseY = y
-    isHovered := e.isInside(x, y)
+    isHovered := e.IsInside(x, y)
     mouseEnteredOrLeft := (e.isMouseHovered != isHovered)
     e.isMouseHovered = isHovered
 

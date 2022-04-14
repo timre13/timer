@@ -12,12 +12,16 @@ import (
     "timer/common"
     "timer/iwidget"
     "timer/button"
-    //"timer/entry"
+    "timer/entry"
     "timer/label"
+    "timer/checkbox"
     "timer/confreader"
 )
 var PANIC_ERR = common.PANIC_ERR
 var WARN_ERR = common.WARN_ERR
+
+func UNUSED(interface{}) {
+}
 
 func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     if elapsedPerc < 0 {
@@ -61,44 +65,11 @@ func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     gfx.FilledCircleColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_INS_RAD, COLOR_BG)
 }
 
-/*
-func drawConfWindow(rend *sdl.Renderer, font *ttf.Font, conf *confreader.Config) {
-    gfx.RoundedBoxColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: COLOR_CLOCK_BG.R, G: COLOR_CLOCK_BG.G, B: COLOR_CLOCK_BG.B, A: 250})
-    gfx.RoundedRectangleColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: 255, G: 255, B: 255, A: 250})
-
-    _lineI := 0
-    renderText := func(text string, breakLine bool, center bool) {
-        if text == "" {
-            _lineI++
-            return
-        }
-        if center {
-            common.RenderText(rend, font, text, &COLOR_FG, WIN_W/2, 30+int32(_lineI*font.Height()), true, false)
-        } else {
-            common.RenderText(rend, font, text, &COLOR_FG, 30, 30+int32(_lineI*font.Height()), false, false)
-        }
-        if breakLine {
-            _lineI++
-        }
-    }
-
-    renderText("SETTINGS", true, true)
-
-    renderText("", true, false)
-    renderText("Work Session", true, false)
-    renderText("    Duration:", true, false)
-    renderText("    Auto start:", true, false)
-
-    renderText("", true, false)
-    renderText("Break Session", true, false)
-    renderText("    Duration:", true, false)
-    renderText("    Auto start:", true, false)
-
-    renderText("", true, false)
-    renderText("Misc", true, false)
-    renderText("    Show notif.:", true, false)
+func getTextWidth(font *ttf.Font, text string) int32 {
+    w, _, err := font.SizeUTF8(text)
+    PANIC_ERR(err)
+    return int32(w)
 }
-*/
 
 var SESSTYPE_STRS = [...]string{"work", "break"}
 
@@ -227,6 +198,68 @@ func main() {
         Font: remTimeFont, FgColor: &COLOR_FG}
     widgetPtrs = append(widgetPtrs, &remTimeLabel)
 
+
+    confWidgetPtrs := []iwidget.IWidget{}
+    var focusedConfWidgetPtr iwidget.IWidget
+    // Create window widgets
+    {
+        var _widget iwidget.IWidget
+        lineI := int32(0)
+        addLabelWidget := func(text string, center bool) {
+            _widget = &label.Label{Font: confWinFont, XPos: 30, YPos: 30+int32(float32(confWinFont.Height())*1.5)*lineI, Text: text, FgColor: &COLOR_FG}
+            if center {
+                _widget.(*label.Label).XPos = WIN_W/2-getTextWidth(confWinFont, _widget.(*label.Label).Text)/2 // Center label
+            }
+            confWidgetPtrs = append(confWidgetPtrs, _widget)
+            lineI++
+        }
+
+        addEntryWidget := func(value string) *entry.Entry {
+            _widget = &entry.Entry{Font: confWinFont, XPos: 200, YPos: 30+int32(float32(confWinFont.Height())*1.5)*(lineI-1), Width: 50, BgColor: &COLOR_BTN, FgColor: &COLOR_FG}
+            _widget.(*entry.Entry).Text = value
+            _widget.(*entry.Entry).MoveCursToEnd()
+            confWidgetPtrs = append(confWidgetPtrs, _widget)
+            return _widget.(*entry.Entry)
+        }
+
+        addCheckboxWidget := func(value bool) *checkbox.CheckBox {
+            _widget = &checkbox.CheckBox{XPos: 200, YPos: 30+int32(float32(confWinFont.Height())*1.5)*(lineI-1),
+                    BgColor: &COLOR_BTN, FgColor: &COLOR_FG, HoverBgColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+            _widget.(*checkbox.CheckBox).Value = value
+            confWidgetPtrs = append(confWidgetPtrs, _widget)
+            return _widget.(*checkbox.CheckBox)
+        }
+
+
+        // TODO: Use frame widget to separate widgets
+
+        addLabelWidget("SETTINGS", true)
+        lineI++
+        addLabelWidget("Work Session", false)
+        addLabelWidget("    Duration:", false)
+        workSessDurMinEntry := addEntryWidget(fmt.Sprint(conf.WorkSessDurMin))
+        addLabelWidget("    Auto start:", false)
+        autoStartWorkSessCheckb := addCheckboxWidget(conf.AutoStartWorkSess)
+        lineI++
+        addLabelWidget("Break Session", false)
+        addLabelWidget("    Duration:", false)
+        breakSessDurMinEntry := addEntryWidget(fmt.Sprint(conf.BreakSessDurMin))
+        addLabelWidget("    Auto start:", false)
+        autoStartBreakSessCheckb := addCheckboxWidget(conf.AutoStartBreakSess)
+        lineI++
+        addLabelWidget( "Misc", false)
+        addLabelWidget( "    Show notif.:", false)
+        sessEndShowNotifCheckb := addCheckboxWidget(conf.SessEndShowNotif)
+
+        focusedConfWidgetPtr = workSessDurMinEntry
+        workSessDurMinEntry.SetFocused(true)
+        UNUSED(autoStartWorkSessCheckb)
+        UNUSED(breakSessDurMinEntry)
+        UNUSED(autoStartBreakSessCheckb)
+        UNUSED(sessEndShowNotifCheckb)
+    }
+
+    sdl.StartTextInput()
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
     gfx.SetFramerate(&fpsMan, TARGET_FPS)
@@ -241,6 +274,18 @@ func main() {
             switch event.GetType() {
             case sdl.QUIT:
                 running = false
+
+            case sdl.TEXTINPUT:
+                if isConfWinOpen && focusedConfWidgetPtr != nil {
+                    focusedConfWidgetPtr.(*entry.Entry).HandleTextInput(event.(*sdl.TextInputEvent).GetText())
+                }
+
+            case sdl.KEYDOWN:
+                if isConfWinOpen && focusedConfWidgetPtr != nil {
+                    focusedConfWidgetPtr.(*entry.Entry).HandleKeyPress(event.(*sdl.KeyboardEvent).Keysym.Sym)
+                }
+
+            // TODO: Implement activating Entry widgets by clicking on them
             }
         }
         if !running {
@@ -254,8 +299,7 @@ func main() {
 
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
 
-        //if !isConfWinOpen {
-        if isConfWinOpen {
+        if !isConfWinOpen {
             drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
             remTimeLabel.Text = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
 
@@ -269,7 +313,26 @@ func main() {
                 w.DrawTooltip(rend, tooltipFont)
             }
         } else {
-            //drawConfWindow(rend, confWinFont, &conf)
+            gfx.RoundedBoxColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: COLOR_CLOCK_BG.R, G: COLOR_CLOCK_BG.G, B: COLOR_CLOCK_BG.B, A: 250})
+            gfx.RoundedRectangleColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: 255, G: 255, B: 255, A: 250})
+
+            for _, w := range confWidgetPtrs {
+                switch w.(type) {
+                case *entry.Entry:
+                    // Handle cursor blinking
+                    w.(*entry.Entry).Tick(fpsMan.RateTicks)
+                }
+            }
+
+            for _, w := range confWidgetPtrs {
+                w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            }
+            for _, w := range confWidgetPtrs {
+                w.Draw(rend)
+            }
+            for _, w := range confWidgetPtrs {
+                w.DrawTooltip(rend, tooltipFont)
+            }
         }
 
         rend.Present()

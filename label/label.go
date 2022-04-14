@@ -4,7 +4,6 @@ import (
     "github.com/veandco/go-sdl2/sdl"
     "github.com/veandco/go-sdl2/gfx"
     "github.com/veandco/go-sdl2/ttf"
-    //. "timer/consts"
     "timer/common"
     "timer/iwidget"
 )
