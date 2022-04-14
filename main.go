@@ -8,6 +8,8 @@ import (
     "fmt"
     "math"
     "path/filepath"
+    "strconv"
+    "errors"
     . "timer/consts"
     "timer/common"
     "timer/iwidget"
@@ -139,19 +141,55 @@ func createConfWinWidgets(
 
     *focusedConfWidgetPtr = workSessDurMinEntry
     workSessDurMinEntry.SetFocused(true)
-    UNUSED(autoStartWorkSessCheckb)
-    UNUSED(breakSessDurMinEntry)
-    UNUSED(autoStartBreakSessCheckb)
-    UNUSED(sessEndShowNotifCheckb)
 
     okButton := button.Button{CentX: WIN_W/3, CentY: WIN_H-50, Tooltip: "Save settings and close menu", Radius: BTN_SMALL_RAD,
-            Callback: nil, LabelImg: okBtnImg,
+            LabelImg: okBtnImg,
             DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    okButton.Callback = func(*button.Button) {
+        strToInt := func(str string, minVal int, maxVal int) (int, error) {
+            intVal, err := strconv.Atoi(str)
+            if err != nil {
+                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Invalid number: \""+str+"\"", nil)
+                return 0, err
+            }
+            if intVal < minVal || intVal > maxVal {
+                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Integer "+fmt.Sprint(intVal)+" out of range", nil)
+                return 0, errors.New("")
+            }
+            return intVal, nil
+        }
+        var err error
+
+        // We will work in a temporary copy
+        tconf := *conf
+
+        tconf.WorkSessDurMin, err = strToInt(workSessDurMinEntry.Text, 1, 999)
+        if err != nil { goto Error }
+        tconf.AutoStartWorkSess = autoStartWorkSessCheckb.Value
+        tconf.BreakSessDurMin, err = strToInt(breakSessDurMinEntry.Text, 1, 999)
+        if err != nil { goto Error }
+        tconf.AutoStartBreakSess = autoStartBreakSessCheckb.Value
+        tconf.SessEndShowNotif = sessEndShowNotifCheckb.Value
+
+        // Overwrite the old config with the new
+        *conf = tconf
+        sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
+        *confWidgetPtrs = []iwidget.IWidget{} // Close window
+        fmt.Println("Overwrote config")
+        // TODO: Update current session
+        Error:
+        // We skip the overwriting of the old config if an error happens
+        // We also leave the window open
+    }
     *confWidgetPtrs = append(*confWidgetPtrs, &okButton)
 
     cancelButton := button.Button{CentX: WIN_W/3*2, CentY: WIN_H-50, Tooltip: "Close menu without saving", Radius: BTN_SMALL_RAD,
             Callback: nil, LabelImg: cancelBtnImg,
             DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    cancelButton.Callback = func(*button.Button) {
+        sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
+        *confWidgetPtrs = []iwidget.IWidget{} // Close window
+    }
     *confWidgetPtrs = append(*confWidgetPtrs, &cancelButton)
 }
 
@@ -188,11 +226,8 @@ func main() {
 
     var fullTimeMs float32 = float32(conf.GetSessLenMs(common.SESSION_TYPE_WORK))
     var elapsedTimeMs float32
-    isPaused := false
+    isPaused := true
     sessionType := common.SESSION_TYPE_WORK
-    isConfWinOpen := false
-    // TODO
-    isConfWinOpen = true
 
     switchSessionType := func() {
         if sessionType == common.SESSION_TYPE_WORK {
@@ -211,6 +246,9 @@ func main() {
     cancelBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/cancel_btn.png"))
     workSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/work_icon.png"))
     breakSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/break_icon.png"))
+
+    confWidgetPtrs := []iwidget.IWidget{}
+    var focusedConfWidgetPtr iwidget.IWidget
 
     widgetPtrs := []iwidget.IWidget{}
 
@@ -242,8 +280,8 @@ func main() {
         Radius: BTN_SMALL_RAD,
         Tooltip: "Settings",
         Callback: func(*button.Button) {
-            isConfWinOpen = true
             sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
+            createConfWinWidgets(confWinFont, &conf, &confWidgetPtrs, &focusedConfWidgetPtr, &okBtnImg, &cancelBtnImg)
         },
         LabelImg: &settingsBtnImg,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
@@ -283,10 +321,6 @@ func main() {
     widgetPtrs = append(widgetPtrs, &remTimeLabel)
 
 
-    confWidgetPtrs := []iwidget.IWidget{}
-    var focusedConfWidgetPtr iwidget.IWidget
-    createConfWinWidgets(confWinFont, &conf, &confWidgetPtrs, &focusedConfWidgetPtr, &okBtnImg, &cancelBtnImg)
-
     sdl.StartTextInput()
     fpsMan := gfx.FPSmanager{}
     gfx.InitFramerate(&fpsMan)
@@ -304,17 +338,17 @@ func main() {
                 running = false
 
             case sdl.TEXTINPUT:
-                if isConfWinOpen && focusedConfWidgetPtr != nil {
+                if len(confWidgetPtrs) != 0 && focusedConfWidgetPtr != nil {
                     focusedConfWidgetPtr.(*entry.Entry).HandleTextInput(event.(*sdl.TextInputEvent).GetText())
                 }
 
             case sdl.KEYDOWN:
-                if isConfWinOpen && focusedConfWidgetPtr != nil {
+                if len(confWidgetPtrs) != 0 && focusedConfWidgetPtr != nil {
                     focusedConfWidgetPtr.(*entry.Entry).HandleKeyPress(event.(*sdl.KeyboardEvent).Keysym.Sym)
                 }
 
             case sdl.MOUSEBUTTONDOWN:
-                if isConfWinOpen {
+                if len(confWidgetPtrs) != 0 {
                     for _, w := range confWidgetPtrs {
                         switch w.(type) {
                         case *entry.Entry:
@@ -342,7 +376,8 @@ func main() {
 
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
 
-        if !isConfWinOpen {
+        // The config menu is displayed when `confWidgetPtrs` has widgets
+        if len(confWidgetPtrs) == 0 {
             drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
             remTimeLabel.Text = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
 
