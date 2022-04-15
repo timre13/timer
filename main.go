@@ -224,7 +224,6 @@ func main() {
     confWinFont, err := ttf.OpenFont(FONT_PATH, CONFWIN_FONT_SIZE)
     PANIC_ERR(err)
 
-    var fullTimeMs float32 = float32(conf.GetSessLenMs(common.SESSION_TYPE_WORK))
     var elapsedTimeMs float32
     isPaused := true
     sessionType := common.SESSION_TYPE_WORK
@@ -374,6 +373,7 @@ func main() {
         rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
         rend.Clear()
 
+        var fullTimeMs float32 = float32(conf.GetSessLenMs(sessionType))
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
 
         // The config menu is displayed when `confWidgetPtrs` has widgets
@@ -424,7 +424,6 @@ func main() {
             }
             switchSessionType()
             elapsedTimeMs = 0
-            fullTimeMs = float32(conf.GetSessLenMs(sessionType))
             // Request the user to click the pause button if it is configured
             switch sessionType {
             case common.SESSION_TYPE_WORK:
