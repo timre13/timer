@@ -108,7 +108,7 @@ func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
         tooltipW, tooltipH, err := font.SizeUTF8(b.Tooltip)
         PANIC_ERR(err)
         tooltipX := int32(limit(int(b.mouseX)+20, 0, WIN_W-tooltipW))
-        tooltipY := int32(limit(int(b.mouseY)+10, 0, WIN_H-tooltipH))
+        tooltipY := int32(limit(int(b.mouseY)+25, 0, WIN_H-tooltipH))
 
         gfx.RoundedBoxColor(rend, tooltipX, tooltipY, tooltipX+int32(tooltipW), tooltipY+int32(tooltipH), 2, COLOR_TOOLTIP_BG)
         PANIC_ERR(err)
