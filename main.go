@@ -76,7 +76,7 @@ func getTextWidth(font *ttf.Font, text string) int32 {
 var SESSTYPE_STRS = [...]string{"work", "break"}
 
 func createConfWinWidgets(
-        confWinFont *ttf.Font, conf *confreader.Config,
+        confWinFont *ttf.Font, conf *confreader.Config, win *sdl.Window,
         confWidgetPtrs *[]iwidget.IWidget, focusedConfWidgetPtr *iwidget.IWidget, okBtnImg *common.Image, cancelBtnImg *common.Image) {
 
     var _widget iwidget.IWidget
@@ -92,7 +92,7 @@ func createConfWinWidgets(
     }
 
     addEntryWidget := func(value string) *entry.Entry {
-        _widget = &entry.Entry{Font: confWinFont, XPos: 180, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+        _widget = &entry.Entry{Font: confWinFont, XPos: 280, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
                 Width: 30, BgColor: &COLOR_BTN, FgColor: &COLOR_FG}
         _widget.(*entry.Entry).Text = value
         _widget.(*entry.Entry).MoveCursToEnd()
@@ -101,7 +101,7 @@ func createConfWinWidgets(
     }
 
     addCheckboxWidget := func(value bool) *checkbox.CheckBox {
-        _widget = &checkbox.CheckBox{XPos: 180, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+        _widget = &checkbox.CheckBox{XPos: 280, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
                 BgColor: &COLOR_BTN, FgColor: &COLOR_FG, HoverBgColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
         _widget.(*checkbox.CheckBox).Value = value
         *confWidgetPtrs = append(*confWidgetPtrs, _widget)
@@ -117,7 +117,7 @@ func createConfWinWidgets(
     addLabelWidget("    Duration:", false)
     workSessDurMinEntry := addEntryWidget(fmt.Sprint(conf.WorkSessDurMin))
     { // Add suffix label
-        _widget = &label.Label{Font: confWinFont, XPos: 212, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+        _widget = &label.Label{Font: confWinFont, XPos: 312, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
                 Text: "minutes", FgColor: &COLOR_FG}
         *confWidgetPtrs = append(*confWidgetPtrs, _widget)
     }
@@ -127,7 +127,7 @@ func createConfWinWidgets(
     addLabelWidget("Break Session", false)
     addLabelWidget("    Duration:", false)
     { // Add suffix label
-        _widget = &label.Label{Font: confWinFont, XPos: 212, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
+        _widget = &label.Label{Font: confWinFont, XPos: 312, YPos: 30+int32(float32(confWinFont.Height())*1.2)*(lineI-1),
                 Text: "minutes", FgColor: &COLOR_FG}
         *confWidgetPtrs = append(*confWidgetPtrs, _widget)
     }
@@ -138,6 +138,8 @@ func createConfWinWidgets(
     addLabelWidget( "Misc", false)
     addLabelWidget( "    Show notif.:", false)
     sessEndShowNotifCheckb := addCheckboxWidget(conf.SessEndShowNotif)
+    addLabelWidget( "    Show rem. time in title:", false)
+    showRemTimeInWinTitleCb := addCheckboxWidget(conf.ShowRemTimeInWinTitle)
 
     *focusedConfWidgetPtr = workSessDurMinEntry
     workSessDurMinEntry.SetFocused(true)
@@ -149,11 +151,11 @@ func createConfWinWidgets(
         strToInt := func(str string, minVal int, maxVal int) (int, error) {
             intVal, err := strconv.Atoi(str)
             if err != nil {
-                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Invalid number: \""+str+"\"", nil)
+                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Invalid number: \""+str+"\"", win)
                 return 0, err
             }
             if intVal < minVal || intVal > maxVal {
-                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Integer "+fmt.Sprint(intVal)+" out of range", nil)
+                sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Error applying settings", "Integer "+fmt.Sprint(intVal)+" out of range", win)
                 return 0, errors.New("")
             }
             return intVal, nil
@@ -170,13 +172,16 @@ func createConfWinWidgets(
         if err != nil { goto Error }
         tconf.AutoStartBreakSess = autoStartBreakSessCheckb.Value
         tconf.SessEndShowNotif = sessEndShowNotifCheckb.Value
+        tconf.ShowRemTimeInWinTitle = showRemTimeInWinTitleCb.Value
 
         // Overwrite the old config with the new
         *conf = tconf
+        if !conf.ShowRemTimeInWinTitle {
+            win.SetTitle(WIN_TITLE)
+        }
         sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
         *confWidgetPtrs = []iwidget.IWidget{} // Close window
         fmt.Println("Overwrote config")
-        // TODO: Update current session
         Error:
         // We skip the overwriting of the old config if an error happens
         // We also leave the window open
@@ -209,7 +214,7 @@ func main() {
     err = ttf.Init()
     PANIC_ERR(err)
 
-    window, err := sdl.CreateWindow("Timer", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, WIN_W, WIN_H, 0)
+    window, err := sdl.CreateWindow(WIN_TITLE, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, WIN_W, WIN_H, 0)
     PANIC_ERR(err)
 
     rend, err := sdl.CreateRenderer(window, 0, 0)
@@ -280,7 +285,7 @@ func main() {
         Tooltip: "Settings",
         Callback: func(*button.Button) {
             sdl.SetCursor(sdl.CreateSystemCursor(sdl.SYSTEM_CURSOR_ARROW))
-            createConfWinWidgets(confWinFont, &conf, &confWidgetPtrs, &focusedConfWidgetPtr, &okBtnImg, &cancelBtnImg)
+            createConfWinWidgets(confWinFont, &conf, window, &confWidgetPtrs, &focusedConfWidgetPtr, &okBtnImg, &cancelBtnImg)
         },
         LabelImg: &settingsBtnImg,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
@@ -373,13 +378,21 @@ func main() {
         rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
         rend.Clear()
 
-        var fullTimeMs float32 = float32(conf.GetSessLenMs(sessionType))
+        fullTimeMs := float32(conf.GetSessLenMs(sessionType))
         remTimeMs := int(fullTimeMs-elapsedTimeMs)
 
         // The config menu is displayed when `confWidgetPtrs` has widgets
         if len(confWidgetPtrs) == 0 {
             drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
-            remTimeLabel.Text = fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
+            remTimeStr := fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
+            remTimeLabel.Text = remTimeStr
+
+            if conf.ShowRemTimeInWinTitle {
+                title := WIN_TITLE+" - " + remTimeStr
+                if window.GetTitle() != title {
+                    window.SetTitle(title)
+                }
+            }
 
             for _, w := range widgetPtrs {
                 w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
@@ -419,7 +432,7 @@ func main() {
         }
         if remTimeMs <= 0 && !isPaused {
             if conf.SessEndShowNotif {
-                err = beeep.Notify("Timer", "End of "+SESSTYPE_STRS[sessionType]+" session", "")
+                err = beeep.Notify(WIN_TITLE, "End of "+SESSTYPE_STRS[sessionType]+" session", "")
                 WARN_ERR(err)
             }
             switchSessionType()

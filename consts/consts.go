@@ -17,6 +17,7 @@ const CLOCK_POLY_STEP_S = 0.001 // The less the small step, the less flickering 
 const BTN_RAD           = 40
 const BTN_CENT_Y        = WIN_H-BTN_RAD-20
 const BTN_SMALL_RAD     = 16
+const WIN_TITLE         = "Timer"
 
 const FONT_PATH             = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 const REM_TIME_FONT_SIZE    = 36

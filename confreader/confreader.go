@@ -13,6 +13,7 @@ var CONF_DEF_BREAK_SESS_LEN_MIN     = 5
 var CONF_DEF_AUTO_START_WORK_SESS   = true
 var CONF_DEF_AUTO_START_BREAK_SESS  = true
 var CONF_DEF_SESS_END_SHOW_NOTIF    = true
+var CONF_DEF_SHOW_REM_TIME_IN_TITLE = true
 
 type Config struct {
     WorkSessDurMin          int
@@ -22,6 +23,7 @@ type Config struct {
     AutoStartBreakSess      bool
 
     SessEndShowNotif        bool
+    ShowRemTimeInWinTitle   bool
 }
 
 func LoadConf(path string) Config {
@@ -31,6 +33,7 @@ func LoadConf(path string) Config {
     conf.AutoStartWorkSess      = CONF_DEF_AUTO_START_WORK_SESS
     conf.AutoStartBreakSess     = CONF_DEF_AUTO_START_BREAK_SESS
     conf.SessEndShowNotif       = CONF_DEF_SESS_END_SHOW_NOTIF
+    conf.ShowRemTimeInWinTitle  = CONF_DEF_SHOW_REM_TIME_IN_TITLE
 
     fileContent, err := os.ReadFile(path)
     if err != nil {
