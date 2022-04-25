@@ -3,6 +3,7 @@ package consts
 import "github.com/veandco/go-sdl2/sdl"
 
 const CONF_PATH         = "config.json"
+const STAT_PATH         = "stats.json"
 
 const TARGET_FPS        = 30
 

@@ -17,6 +17,7 @@ import (
     "timer/label"
     "timer/checkbox"
     "timer/confreader"
+    "timer/stats"
 )
 var PANIC_ERR = common.PANIC_ERR
 var WARN_ERR = common.WARN_ERR
@@ -196,11 +197,23 @@ func createConfWinWidgets(
     *confWidgetPtrs = append(*confWidgetPtrs, &cancelButton)
 }
 
+// TODO: Taskbar icon
+// TODO: Hiding with taskbar icon
+
 func main() {
     exeDir := common.GetExeDir()
 
     confPath := common.GetRealPath(exeDir, CONF_PATH)
     conf := confreader.LoadConf(confPath)
+
+    statPath := common.GetRealPath(exeDir, STAT_PATH)
+    stat := stats.LoadStats(statPath)
+
+    // FIXME: Handle midnight (the date changes) while the program is running
+    currDate := stats.GetCurrentDate()
+    fmt.Printf("Today's date: %+v\n", currDate)
+    todayStats := stat.GetDay(&currDate)
+    fmt.Printf("Today's stats: %+v\n", todayStats)
 
     err := sdl.Init(sdl.INIT_VIDEO)
     PANIC_ERR(err)
@@ -332,6 +345,14 @@ func main() {
 
             switch event.GetType() {
             case sdl.QUIT:
+                // Update elapsed time counter with the remaining time
+                switch sessionType {
+                case common.SESSION_TYPE_WORK:
+                    todayStats.WorkMs += elapsedTimeMs
+
+                case common.SESSION_TYPE_BREAK:
+                    todayStats.BreakMs += elapsedTimeMs
+                }
                 running = false
 
             case sdl.TEXTINPUT:
@@ -428,6 +449,14 @@ func main() {
                 err = beeep.Notify(WIN_TITLE, "End of "+SESSTYPE_STRS[sessionType]+" session", "")
                 WARN_ERR(err)
             }
+            // Update elapsed time counter
+            switch sessionType {
+            case common.SESSION_TYPE_WORK:
+                todayStats.WorkMs += elapsedTimeMs
+
+            case common.SESSION_TYPE_BREAK:
+                todayStats.BreakMs += elapsedTimeMs
+            }
             switchSessionType()
             elapsedTimeMs = 0
             // Request the user to click the pause button if it is configured
@@ -449,4 +478,8 @@ func main() {
     sdl.Quit()
 
     confreader.WriteConf(confPath, &conf)
+    if !todayStats.IsEmpty() {
+        stat[currDate] = todayStats
+    }
+    stats.WriteStats(statPath, &stat)
 }
