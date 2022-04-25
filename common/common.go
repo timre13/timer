@@ -41,6 +41,14 @@ func GetExeDir() string {
     return dirPath
 }
 
+func GetRealPath(exeDir, path string) string {
+    if filepath.IsAbs(path) { // Absolute path
+        return path
+    } else { // Relative path
+        return filepath.Join(exeDir, path)
+    }
+}
+
 func MinsToMillisecs(mins int) int {
     return mins*60*1000
 }

@@ -7,7 +7,6 @@ import (
     "github.com/gen2brain/beeep"
     "fmt"
     "math"
-    "path/filepath"
     "strconv"
     "errors"
     . "timer/consts"
@@ -22,8 +21,7 @@ import (
 var PANIC_ERR = common.PANIC_ERR
 var WARN_ERR = common.WARN_ERR
 
-func UNUSED(interface{}) {
-}
+func UNUSED(interface{}) {}
 
 func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     if elapsedPerc < 0 {
@@ -201,12 +199,7 @@ func createConfWinWidgets(
 func main() {
     exeDir := common.GetExeDir()
 
-    var confPath string
-    if filepath.IsAbs(CONF_PATH) { // Absolute path
-        confPath = CONF_PATH
-    } else { // Relative path
-        confPath = filepath.Join(exeDir, CONF_PATH)
-    }
+    confPath := common.GetRealPath(exeDir, CONF_PATH)
     conf := confreader.LoadConf(confPath)
 
     err := sdl.Init(sdl.INIT_VIDEO)
@@ -243,13 +236,13 @@ func main() {
         }
     }
 
-    pauseBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/pause_btn.png"))
-    startBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/start_btn.png"))
-    settingsBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/settings_btn.png"))
-    okBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/ok_btn.png"))
-    cancelBtnImg := common.LoadImage(rend, filepath.Join(exeDir, "img/cancel_btn.png"))
-    workSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/work_icon.png"))
-    breakSessionImg := common.LoadImage(rend, filepath.Join(exeDir, "img/break_icon.png"))
+    pauseBtnImg         := common.LoadImage(rend, common.GetRealPath(exeDir, "img/pause_btn.png"))
+    startBtnImg         := common.LoadImage(rend, common.GetRealPath(exeDir, "img/start_btn.png"))
+    settingsBtnImg      := common.LoadImage(rend, common.GetRealPath(exeDir, "img/settings_btn.png"))
+    okBtnImg            := common.LoadImage(rend, common.GetRealPath(exeDir, "img/ok_btn.png"))
+    cancelBtnImg        := common.LoadImage(rend, common.GetRealPath(exeDir, "img/cancel_btn.png"))
+    workSessionImg      := common.LoadImage(rend, common.GetRealPath(exeDir, "img/work_icon.png"))
+    breakSessionImg     := common.LoadImage(rend, common.GetRealPath(exeDir, "img/break_icon.png"))
 
     confWidgetPtrs := []iwidget.IWidget{}
     var focusedConfWidgetPtr iwidget.IWidget
