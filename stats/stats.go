@@ -35,6 +35,7 @@ func LoadStats(path string) Stats {
             fmt.Printf("Stats :: Loaded stats: %+v\n", stats)
         }
     }
+    // TODO: Validate dates and values
     return stats
 }
 
@@ -61,6 +62,25 @@ func (s *Stats) GetDay(date *string) DayStats {
     } else {
         return DayStats{}
     }
+}
+
+func (s *Stats) GetMaxVals() DayStats {
+    getMaxF := func(getter func(day *DayStats)(float32)) float32 {
+        var maxVal float32
+        for _, v := range *s {
+            val := getter(&v)
+            if getter(&v) > maxVal {
+                maxVal = val
+            }
+        }
+        return maxVal
+    }
+
+    max := DayStats{}
+    max.WorkMs = getMaxF(func(day *DayStats)(float32){ return day.WorkMs })
+    max.BreakMs = getMaxF(func(day *DayStats)(float32){ return day.BreakMs })
+
+    return max
 }
 
 func GetCurrentDate() string {

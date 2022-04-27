@@ -9,6 +9,8 @@ const TARGET_FPS        = 30
 
 const WIN_W             = 500
 const WIN_H             = 600
+const STATS_WIN_W       = 1000
+const STATS_WIN_H       = 800
 const CLOCK_CENT_X      = 250
 const CLOCK_CENT_Y      = 250
 const CLOCK_RAD         = 230

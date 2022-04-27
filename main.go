@@ -9,6 +9,8 @@ import (
     "math"
     "strconv"
     "errors"
+    "sort"
+    //"math/rand"
     . "timer/consts"
     "timer/common"
     "timer/iwidget"
@@ -197,6 +199,54 @@ func createConfWinWidgets(
     *confWidgetPtrs = append(*confWidgetPtrs, &cancelButton)
 }
 
+func renderStats(win *sdl.Window, rend *sdl.Renderer, stats_ *stats.Stats) {
+    rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
+    rend.Clear()
+
+    winW, winH := win.GetSize()
+    const PLOT_TOP_MARGIN = 100
+    const PLOT_BOT_MARGIN = 100
+    plotH := winH-PLOT_TOP_MARGIN-PLOT_BOT_MARGIN
+
+    gfx.BoxColor(rend, 0, PLOT_TOP_MARGIN, winW, winH-PLOT_BOT_MARGIN, COLOR_BTN)
+
+    if len(*stats_) < 2 {
+        return
+    }
+
+    sampleCount := len(*stats_)
+    sampleW := float64(winW) / float64(sampleCount-1)
+    maxStats := stats_.GetMaxVals()
+
+    sortedKeys := make([]string, 0)
+    for k := range *stats_ {
+        sortedKeys = append(sortedKeys, k)
+    }
+    sort.Strings(sortedKeys)
+    lastX := int32(-1)
+    lastY := int32(-1)
+    for i:=0; i < sampleCount; i++ {
+        sample := (*stats_)[sortedKeys[i]]
+        x := int32(sampleW*float64(i))
+        y := plotH - int32(float32(plotH)*(sample.WorkMs/maxStats.WorkMs)) + PLOT_TOP_MARGIN
+
+        if lastX != -1 && lastY != -1 {
+            gfx.LineColor(rend, lastX, lastY, x, y, COLOR_FG)
+        }
+        lastX = x
+        lastY = y
+    }
+
+    /*
+    // Test
+    if rand.Intn(100) > 80 {
+        s := stats.DayStats{}
+        s.WorkMs = float32(rand.Int31n(100000)+100000)
+        (*stats_)[fmt.Sprint(rand.Float32())] = s
+    }
+    */
+}
+
 // TODO: Taskbar icon
 // TODO: Hiding with taskbar icon
 
@@ -222,11 +272,19 @@ func main() {
 
     window, err := sdl.CreateWindow(WIN_TITLE, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, WIN_W, WIN_H, 0)
     PANIC_ERR(err)
+    mainWinId, err := window.GetID()
+    PANIC_ERR(err)
+    rend, err := sdl.CreateRenderer(window, -1, 0)
+    PANIC_ERR(err)
 
-    rend, err := sdl.CreateRenderer(window, 0, 0)
+    statsWin, err := sdl.CreateWindow(WIN_TITLE+" - Statistics", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+            STATS_WIN_W, STATS_WIN_H, sdl.WINDOW_HIDDEN)
     PANIC_ERR(err)
-    err = rend.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+    statsWinId, err := statsWin.GetID()
     PANIC_ERR(err)
+    statsRend, err := sdl.CreateRenderer(statsWin, -1, 0)
+    PANIC_ERR(err)
+    UNUSED(statsRend)
 
     remTimeFont, err := ttf.OpenFont(FONT_PATH, REM_TIME_FONT_SIZE)
     PANIC_ERR(err)
@@ -254,6 +312,7 @@ func main() {
     settingsBtnImg      := common.LoadImage(rend, common.GetRealPath(exeDir, "img/settings_btn.png"))
     okBtnImg            := common.LoadImage(rend, common.GetRealPath(exeDir, "img/ok_btn.png"))
     cancelBtnImg        := common.LoadImage(rend, common.GetRealPath(exeDir, "img/cancel_btn.png"))
+    statsBtnImg         := common.LoadImage(rend, common.GetRealPath(exeDir, "img/stats_btn.png"))
     workSessionImg      := common.LoadImage(rend, common.GetRealPath(exeDir, "img/work_icon.png"))
     breakSessionImg     := common.LoadImage(rend, common.GetRealPath(exeDir, "img/break_icon.png"))
 
@@ -296,6 +355,18 @@ func main() {
         LabelImg: &settingsBtnImg,
         DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
     widgetPtrs = append(widgetPtrs, &settingsBtn)
+
+    statsBtn := button.Button{
+        CentX: BTN_SMALL_RAD+4, CentY: BTN_SMALL_RAD+4,
+        Radius: BTN_SMALL_RAD,
+        Tooltip: "Statistics",
+        Callback: func(*button.Button) {
+            statsWin.Show()
+            statsWin.Raise()
+        },
+        LabelImg: &statsBtnImg,
+        DefColor: &COLOR_BTN, HoverColor: &COLOR_BTN_HOVER, HoverBdColor: &COLOR_BTN_HOVER_BD}
+    widgetPtrs = append(widgetPtrs, &statsBtn)
 
 
     sessTypeLabel := button.Button{
@@ -344,16 +415,24 @@ func main() {
             }
 
             switch event.GetType() {
-            case sdl.QUIT:
-                // Update elapsed time counter with the remaining time
-                switch sessionType {
-                case common.SESSION_TYPE_WORK:
-                    todayStats.WorkMs += elapsedTimeMs
+            case sdl.WINDOWEVENT:
+                if event.(*sdl.WindowEvent).Event == sdl.WINDOWEVENT_CLOSE { // If a window close is requested
+                    if event.(*sdl.WindowEvent).WindowID == mainWinId { // If the main window needs to be closed
+                        // Update elapsed time counter with the remaining time
+                        switch sessionType {
+                        case common.SESSION_TYPE_WORK:
+                            todayStats.WorkMs += elapsedTimeMs
 
-                case common.SESSION_TYPE_BREAK:
-                    todayStats.BreakMs += elapsedTimeMs
+                        case common.SESSION_TYPE_BREAK:
+                            todayStats.BreakMs += elapsedTimeMs
+                        }
+                        running = false // Exit program
+                    } else if event.(*sdl.WindowEvent).WindowID == statsWinId { // If the stats window needs to be closed
+                        statsWin.Hide()
+                    } else {
+                        panic(event.(*sdl.WindowEvent).WindowID)
+                    }
                 }
-                running = false
 
             case sdl.TEXTINPUT:
                 if len(confWidgetPtrs) != 0 && focusedConfWidgetPtr != nil {
@@ -408,6 +487,7 @@ func main() {
                 }
             }
 
+            // FIXME: Handle when leaving the window without moving the cursor (e.g. switching workspace)
             for _, w := range widgetPtrs {
                 w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
             }
@@ -440,7 +520,12 @@ func main() {
             }
         }
 
+        if (statsWin.GetFlags() & sdl.WINDOW_SHOWN) != 0 {
+            renderStats(statsWin, statsRend, &stat)
+        }
+
         rend.Present()
+        statsRend.Present()
         if !isPaused {
             elapsedTimeMs += fpsMan.RateTicks
         }
