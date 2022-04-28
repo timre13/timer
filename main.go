@@ -248,16 +248,24 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
         }
     }
 
+    {
+        maxStats := stats_.GetMaxVals()
+        plotSamples(maxStats.WorkMs, func(s *stats.DayStats)(float32) { return s.WorkMs }, &COLOR_GREEN)
+        plotSamples(maxStats.BreakMs, func(s *stats.DayStats)(float32) { return s.BreakMs }, &COLOR_RED)
     }
 
     {
+        msToHoursMinsStr := func(ms float32) string {
+            return fmt.Sprintf("%02d:%02d", int(ms/1000/60)/60, int(ms/1000/60)%60)
+        }
+
         hoveredSampleKey := sortedKeys[sampleCursI]
         hoveredSample := (*stats_)[hoveredSampleKey]
         common.RenderText(rend, font,
-            fmt.Sprintf("%s\nWork duration: %02d:%02d",
+        fmt.Sprintf("%s\nWork:  %s\nBreak: %s",
                 hoveredSampleKey, // Date
-                int(hoveredSample.WorkMs/1000/60)/60, // Hours
-                int(hoveredSample.WorkMs/1000/60)%60), // Mins
+                msToHoursMinsStr(hoveredSample.WorkMs), 
+                msToHoursMinsStr(hoveredSample.BreakMs)),
             &COLOR_FG, 10, plotH+PLOT_TOP_MARGIN+10, false, false)
     }
 
