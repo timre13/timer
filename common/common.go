@@ -63,7 +63,7 @@ func LerpColors(x *sdl.Color, y *sdl.Color, t float32) sdl.Color {
         R: uint8(lerpInt(int(x.R), int(y.R), t)),
         G: uint8(lerpInt(int(x.G), int(y.G), t)),
         B: uint8(lerpInt(int(x.B), int(y.B), t)),
-        A: 255,
+        A: uint8(lerpInt(int(x.A), int(y.A), t)),
     }
 }
 

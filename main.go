@@ -216,7 +216,6 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
 
     sampleCount := len(*stats_)
     sampleW := float64(winW) / float64(sampleCount-1)
-    maxStats := stats_.GetMaxVals()
     sampleCursI := (mouseX+int32(sampleW/2))/int32(sampleW)
 
     sortedKeys := make([]string, 0)
@@ -224,27 +223,31 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
         sortedKeys = append(sortedKeys, k)
     }
     sort.Strings(sortedKeys)
-    lastX := int32(-1)
-    lastY := int32(-1)
-    for i:=0; i < sampleCount; i++ {
-        sample := (*stats_)[sortedKeys[i]]
-        x := int32(sampleW*float64(i))
-        y := plotH - int32(float32(plotH)*(sample.WorkMs/maxStats.WorkMs)) + PLOT_TOP_MARGIN
+    plotSamples := func(maxVal float32, getter func(*stats.DayStats)(float32), color *sdl.Color) {
+        lastX := int32(-1)
+        lastY := int32(-1)
+        for i:=0; i < sampleCount; i++ {
+            sample := (*stats_)[sortedKeys[i]]
+            x := int32(sampleW*float64(i))
+            y := plotH - int32(float32(plotH)*(getter(&sample)/maxVal)) + PLOT_TOP_MARGIN
 
-        if lastX != -1 && lastY != -1 {
-            if int32(i) == sampleCursI || int32(i) == sampleCursI+1 {
-                gfx.LineColor(rend, lastX, lastY, x, y, sdl.Color{R: 255, G: 150, B: 150, A: 255})
-            } else {
-                gfx.LineColor(rend, lastX, lastY, x, y, COLOR_FG)
+            if lastX != -1 && lastY != -1 {
+                dist := float32(math.Abs(float64(float64(i)-float64(sampleCursI)-0.5)))
+                t := dist/5
+                if t > 1 { t = 1}
+                gfx.LineColor(rend, lastX, lastY, x, y, common.LerpColors(&COLOR_WHITE, color, t))
             }
+            if int32(i) == sampleCursI {
+                gfx.FilledCircleColor(rend, x, y, 6, common.LerpColors(color, &COLOR_WHITE, 0.7))
+                gfx.AACircleColor(rend, x, y, 6, common.LerpColors(color, &COLOR_WHITE, 0.9))
+            } else {
+                gfx.FilledCircleColor(rend, x, y, 4, *color)
+            }
+            lastX = x
+            lastY = y
         }
-        if int32(i) == sampleCursI {
-            gfx.FilledCircleColor(rend, x, y, 6, sdl.Color{R: 255, G: 0, B: 0, A: 255})
-        } else {
-            gfx.FilledCircleColor(rend, x, y, 4, COLOR_FG)
-        }
-        lastX = x
-        lastY = y
+    }
+
     }
 
     {
