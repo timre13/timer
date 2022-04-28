@@ -563,8 +563,10 @@ func main() {
     sdl.Quit()
 
     confreader.WriteConf(confPath, &conf)
-    if !todayStats.IsEmpty() {
+    if todayStats != stat.GetDay(&currDate) { // Only write values if there are changes
         stat[currDate] = todayStats
+        stats.WriteStats(statPath, &stat)
+    } else {
+        fmt.Println("No stats to write")
     }
-    stats.WriteStats(statPath, &stat)
 }
