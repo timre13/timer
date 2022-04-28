@@ -199,12 +199,12 @@ func createConfWinWidgets(
     *confWidgetPtrs = append(*confWidgetPtrs, &cancelButton)
 }
 
-func renderStats(win *sdl.Window, rend *sdl.Renderer, stats_ *stats.Stats) {
+func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *stats.Stats, mouseX, mouseY int32) {
     rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
     rend.Clear()
 
     winW, winH := win.GetSize()
-    const PLOT_TOP_MARGIN = 100
+    const PLOT_TOP_MARGIN = 20
     const PLOT_BOT_MARGIN = 100
     plotH := winH-PLOT_TOP_MARGIN-PLOT_BOT_MARGIN
 
@@ -217,6 +217,7 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, stats_ *stats.Stats) {
     sampleCount := len(*stats_)
     sampleW := float64(winW) / float64(sampleCount-1)
     maxStats := stats_.GetMaxVals()
+    sampleCursI := (mouseX+int32(sampleW/2))/int32(sampleW)
 
     sortedKeys := make([]string, 0)
     for k := range *stats_ {
@@ -231,10 +232,30 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, stats_ *stats.Stats) {
         y := plotH - int32(float32(plotH)*(sample.WorkMs/maxStats.WorkMs)) + PLOT_TOP_MARGIN
 
         if lastX != -1 && lastY != -1 {
-            gfx.LineColor(rend, lastX, lastY, x, y, COLOR_FG)
+            if int32(i) == sampleCursI || int32(i) == sampleCursI+1 {
+                gfx.LineColor(rend, lastX, lastY, x, y, sdl.Color{R: 255, G: 150, B: 150, A: 255})
+            } else {
+                gfx.LineColor(rend, lastX, lastY, x, y, COLOR_FG)
+            }
+        }
+        if int32(i) == sampleCursI {
+            gfx.FilledCircleColor(rend, x, y, 6, sdl.Color{R: 255, G: 0, B: 0, A: 255})
+        } else {
+            gfx.FilledCircleColor(rend, x, y, 4, COLOR_FG)
         }
         lastX = x
         lastY = y
+    }
+
+    {
+        hoveredSampleKey := sortedKeys[sampleCursI]
+        hoveredSample := (*stats_)[hoveredSampleKey]
+        common.RenderText(rend, font,
+            fmt.Sprintf("%s\nWork duration: %02d:%02d",
+                hoveredSampleKey, // Date
+                int(hoveredSample.WorkMs/1000/60)/60, // Hours
+                int(hoveredSample.WorkMs/1000/60)%60), // Mins
+            &COLOR_FG, 10, plotH+PLOT_TOP_MARGIN+10, false, false)
     }
 
     /*
@@ -521,7 +542,7 @@ func main() {
         }
 
         if (statsWin.GetFlags() & sdl.WINDOW_SHOWN) != 0 {
-            renderStats(statsWin, statsRend, &stat)
+            renderStats(statsWin, statsRend, confWinFont, &stat, mouseX, mouseY)
         }
 
         rend.Present()
@@ -567,6 +588,6 @@ func main() {
         stat[currDate] = todayStats
         stats.WriteStats(statPath, &stat)
     } else {
-        fmt.Println("No stats to write")
+        fmt.Println("Stats :: No stats to write")
     }
 }
