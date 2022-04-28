@@ -100,6 +100,39 @@ func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color
     }
 }
 
+func GetTextSize(font *ttf.Font, str string) (int32, int32) {
+    lines := strings.Split(str, "\n")
+    var outW, outH int
+    for _, line := range lines {
+        w, h, err := font.SizeUTF8(line)
+        PANIC_ERR(err)
+
+        outH += h
+        if w > outW { outW = w }
+    }
+    return int32(outW), int32(outH)
+}
+
+func GetTextWidth(font *ttf.Font, text string) int32 {
+    w, _ := GetTextSize(font, text)
+    return int32(w)
+}
+
+func RenderHorizText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32) {
+    textSurf, err := font.RenderUTF8Blended(str, *color)
+    PANIC_ERR(err)
+    textTex, err := rend.CreateTextureFromSurface(textSurf)
+    PANIC_ERR(err)
+
+    dstRect := sdl.Rect{
+        X: x, Y: y,
+        W: textSurf.W, H: textSurf.H}
+    rend.CopyEx(textTex, nil, &dstRect, -90, nil, sdl.FLIP_NONE)
+
+    textSurf.Free()
+    textTex.Destroy()
+}
+
 type Image struct {
     Img *sdl.Texture
     Width, Height int32

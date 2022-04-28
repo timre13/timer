@@ -68,12 +68,6 @@ func drawClock(rend *sdl.Renderer, elapsedPerc float32) {
     gfx.FilledCircleColor(rend, CLOCK_CENT_X, CLOCK_CENT_Y, CLOCK_INS_RAD, COLOR_BG)
 }
 
-func getTextWidth(font *ttf.Font, text string) int32 {
-    w, _, err := font.SizeUTF8(text)
-    PANIC_ERR(err)
-    return int32(w)
-}
-
 var SESSTYPE_STRS = [...]string{"work", "break"}
 
 func createConfWinWidgets(
@@ -86,7 +80,7 @@ func createConfWinWidgets(
         _widget = &label.Label{Font: confWinFont, XPos: 30, YPos: 30+int32(float32(confWinFont.Height())*1.2)*lineI,
                 Text: text, FgColor: &COLOR_FG}
         if center {
-            _widget.(*label.Label).XPos = WIN_W/2-getTextWidth(confWinFont, _widget.(*label.Label).Text)/2 // Center label
+            _widget.(*label.Label).XPos = WIN_W/2-common.GetTextWidth(confWinFont, _widget.(*label.Label).Text)/2 // Center label
         }
         *confWidgetPtrs = append(*confWidgetPtrs, _widget)
         lineI++
@@ -205,7 +199,7 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
 
     winW, winH := win.GetSize()
     const PLOT_TOP_MARGIN = 20
-    const PLOT_BOT_MARGIN = 100
+    const PLOT_BOT_MARGIN = 150
     plotH := winH-PLOT_TOP_MARGIN-PLOT_BOT_MARGIN
 
     gfx.BoxColor(rend, 0, PLOT_TOP_MARGIN, winW, winH-PLOT_BOT_MARGIN, COLOR_BTN)
@@ -248,6 +242,11 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
         }
     }
 
+    dateWidth := common.GetTextWidth(font, "0000-00-00")
+    for i:=0; i < sampleCount; i++ { // Render column names
+        common.RenderHorizText(rend, font, sortedKeys[i], &COLOR_FG, int32(sampleW*float64(i))-dateWidth/2, plotH+PLOT_TOP_MARGIN+dateWidth/2)
+    }
+
     {
         maxStats := stats_.GetMaxVals()
         plotSamples(maxStats.WorkMs, func(s *stats.DayStats)(float32) { return s.WorkMs }, &COLOR_GREEN)
@@ -261,12 +260,11 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
 
         hoveredSampleKey := sortedKeys[sampleCursI]
         hoveredSample := (*stats_)[hoveredSampleKey]
-        common.RenderText(rend, font,
-        fmt.Sprintf("%s\nWork:  %s\nBreak: %s",
-                hoveredSampleKey, // Date
-                msToHoursMinsStr(hoveredSample.WorkMs), 
-                msToHoursMinsStr(hoveredSample.BreakMs)),
-            &COLOR_FG, 10, plotH+PLOT_TOP_MARGIN+10, false, false)
+        str := fmt.Sprintf("Work:  %s\nBreak: %s",
+            msToHoursMinsStr(hoveredSample.WorkMs),
+            msToHoursMinsStr(hoveredSample.BreakMs))
+        width, _ := common.GetTextSize(font, str)
+        common.RenderText(rend, font, str, &COLOR_FG, int32(float64(sampleCursI)*sampleW)-width/2, mouseY+25, false, false)
     }
 
     /*
