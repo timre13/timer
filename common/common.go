@@ -9,6 +9,7 @@ import (
     "runtime/debug"
     "os"
     "path/filepath"
+    "strings"
 )
 
 type SessionType int
@@ -67,30 +68,36 @@ func LerpColors(x *sdl.Color, y *sdl.Color, t float32) sdl.Color {
 }
 
 func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32, isXCent bool, isYCent bool) {
-    textSurf, err := font.RenderUTF8Blended(str, *color)
-    PANIC_ERR(err)
-    textTex, err := rend.CreateTextureFromSurface(textSurf)
-    PANIC_ERR(err)
+    lines := strings.Split(str, "\n")
+    var yOffs int32
+    for _, line := range lines {
+        textSurf, err := font.RenderUTF8Blended(line, *color)
+        PANIC_ERR(err)
+        textTex, err := rend.CreateTextureFromSurface(textSurf)
+        PANIC_ERR(err)
 
-    var rectX, rectY int32
-    if isXCent {
-        rectX = x-textSurf.W/2
-    } else {
-        rectX = x
+        var rectX, rectY int32
+        if isXCent {
+            rectX = x-textSurf.W/2
+        } else {
+            rectX = x
+        }
+        if isYCent {
+            rectY = y-textSurf.H/2
+        } else {
+            rectY = y
+        }
+
+        dstRect := sdl.Rect{
+            X: rectX, Y: rectY+yOffs,
+            W: textSurf.W, H: textSurf.H}
+        rend.Copy(textTex, nil, &dstRect)
+
+        yOffs += textSurf.H
+
+        textSurf.Free()
+        textTex.Destroy()
     }
-    if isYCent {
-        rectY = y-textSurf.H/2
-    } else {
-        rectY = y
-    }
-
-    dstRect := sdl.Rect{
-        X: rectX, Y: rectY,
-        W: textSurf.W, H: textSurf.H}
-    rend.Copy(textTex, nil, &dstRect)
-
-    textSurf.Free()
-    textTex.Destroy()
 }
 
 type Image struct {
