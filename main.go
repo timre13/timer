@@ -314,7 +314,8 @@ func main() {
     PANIC_ERR(err)
     statsRend, err := sdl.CreateRenderer(statsWin, -1, 0)
     PANIC_ERR(err)
-    UNUSED(statsRend)
+
+    if mainWinId == statsWinId { panic(mainWinId) }
 
     remTimeFont, err := ttf.OpenFont(FONT_PATH, REM_TIME_FONT_SIZE)
     PANIC_ERR(err)
@@ -437,6 +438,8 @@ func main() {
     gfx.InitFramerate(&fpsMan)
     gfx.SetFramerate(&fpsMan, TARGET_FPS)
     running := true
+    var mouseX, mouseY int32
+    mouseWinId := mainWinId
     for {
         for {
             event := sdl.PollEvent()
@@ -464,16 +467,19 @@ func main() {
                     }
                 }
 
+            // FIXME: Check which window
             case sdl.TEXTINPUT:
                 if len(confWidgetPtrs) != 0 && focusedConfWidgetPtr != nil {
                     focusedConfWidgetPtr.(*entry.Entry).HandleTextInput(event.(*sdl.TextInputEvent).GetText())
                 }
 
+            // FIXME: Check which window
             case sdl.KEYDOWN:
                 if len(confWidgetPtrs) != 0 && focusedConfWidgetPtr != nil {
                     focusedConfWidgetPtr.(*entry.Entry).HandleKeyPress(event.(*sdl.KeyboardEvent).Keysym.Sym)
                 }
 
+            // FIXME: Check which window
             case sdl.MOUSEBUTTONDOWN:
                 if len(confWidgetPtrs) != 0 {
                     for _, w := range confWidgetPtrs {
@@ -490,13 +496,18 @@ func main() {
                         }
                     }
                 }
+
+            case sdl.MOUSEMOTION:
+                mouseWinId = event.(*sdl.MouseMotionEvent).WindowID
+                mouseX = event.(*sdl.MouseMotionEvent).X
+                mouseY = event.(*sdl.MouseMotionEvent).Y
             }
         }
         if !running {
             break
         }
 
-        mouseX, mouseY, mouseState := sdl.GetMouseState()
+        _, _, mouseState := sdl.GetMouseState()
 
         rend.SetDrawColor(COLOR_BG.R, COLOR_BG.G, COLOR_BG.B, COLOR_BG.A)
         rend.Clear()
@@ -518,14 +529,18 @@ func main() {
             }
 
             // FIXME: Handle when leaving the window without moving the cursor (e.g. switching workspace)
-            for _, w := range widgetPtrs {
-                w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            if mouseWinId == mainWinId {
+                for _, w := range widgetPtrs {
+                    w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+                }
             }
             for _, w := range widgetPtrs {
                 w.Draw(rend)
             }
-            for _, w := range widgetPtrs {
-                w.DrawTooltip(rend, tooltipFont)
+            if mouseWinId == mainWinId {
+                for _, w := range widgetPtrs {
+                    w.DrawTooltip(rend, tooltipFont)
+                }
             }
         } else {
             gfx.RoundedBoxColor(rend, 20, 20, WIN_W-20, WIN_H-20, 4, sdl.Color{R: COLOR_CLOCK_BG.R, G: COLOR_CLOCK_BG.G, B: COLOR_CLOCK_BG.B, A: 250})
@@ -539,19 +554,27 @@ func main() {
                 }
             }
 
-            for _, w := range confWidgetPtrs {
-                w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+            if mouseWinId == mainWinId {
+                for _, w := range confWidgetPtrs {
+                    w.UpdateMouseState(mouseX, mouseY, mouseState, fpsMan.RateTicks)
+                }
             }
             for _, w := range confWidgetPtrs {
                 w.Draw(rend)
             }
-            for _, w := range confWidgetPtrs {
-                w.DrawTooltip(rend, tooltipFont)
+            if mouseWinId == mainWinId {
+                for _, w := range confWidgetPtrs {
+                    w.DrawTooltip(rend, tooltipFont)
+                }
             }
         }
 
         if (statsWin.GetFlags() & sdl.WINDOW_SHOWN) != 0 {
-            renderStats(statsWin, statsRend, confWinFont, &stat, mouseX, mouseY)
+            if mouseWinId == statsWinId {
+                renderStats(statsWin, statsRend, confWinFont, &stat, mouseX, mouseY)
+            } else {
+                renderStats(statsWin, statsRend, confWinFont, &stat, -100, -100)
+            }
         }
 
         rend.Present()
