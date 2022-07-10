@@ -68,6 +68,10 @@ func LerpColors(x *sdl.Color, y *sdl.Color, t float32) sdl.Color {
 }
 
 func RenderText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32, isXCent bool, isYCent bool) {
+    if str == "" {
+        return
+    }
+
     lines := strings.Split(str, "\n")
     var yOffs int32
     for _, line := range lines {
@@ -119,6 +123,10 @@ func GetTextWidth(font *ttf.Font, text string) int32 {
 }
 
 func RenderHorizText(rend *sdl.Renderer, font *ttf.Font, str string, color *sdl.Color, x, y int32) {
+    if str == "" {
+        return
+    }
+
     textSurf, err := font.RenderUTF8Blended(str, *color)
     PANIC_ERR(err)
     textTex, err := rend.CreateTextureFromSurface(textSurf)
