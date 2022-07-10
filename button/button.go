@@ -85,11 +85,11 @@ func (b *Button) Draw(rend *sdl.Renderer) {
         gfx.FilledCircleColor(rend, b.CentX, b.CentY, b.Radius, *b.DefColor)
     }
 
-    // Don't draw out of the button and respect image size if smaller than button
-    width := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Width)))
-    height := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Height)))
-
     if b.LabelImg != nil && b.LabelImg.Img != nil {
+        // Don't draw out of the button and respect image size if smaller than button
+        width := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Width)))
+        height := int32(math.Min(float64(b.Radius*2), float64(b.LabelImg.Height)))
+
         rend.Copy(b.LabelImg.Img, nil, &sdl.Rect{X: b.CentX-width/2, Y: b.CentY-height/2, W: width, H: height})
     }
 }
