@@ -104,7 +104,7 @@ func limit(x, min, max int) int {
 }
 
 func (b *Button) DrawTooltip(rend *sdl.Renderer, font *ttf.Font) {
-    if b.isMouseHovered && b.mouseHoverDurMs >= BTN_TOOLT_DELAY_MS {
+    if b.isMouseHovered && b.mouseHoverDurMs >= BTN_TOOLT_DELAY_MS && b.Tooltip != "" {
         tooltipW, tooltipH, err := font.SizeUTF8(b.Tooltip)
         PANIC_ERR(err)
         tooltipX := int32(limit(int(b.mouseX)+20, 0, WIN_W-tooltipW))
