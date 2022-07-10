@@ -10,6 +10,8 @@ import (
     "strconv"
     "errors"
     "sort"
+    "runtime"
+    "strings"
     //"math/rand"
     . "timer/consts"
     "timer/common"
@@ -281,10 +283,27 @@ func formatTimeMs(time int) string {
     return fmt.Sprintf("%02d:%02d", time/1000/60, time/1000%60)
 }
 
+func onExit() {
+    if r := recover(); r != nil {
+        fmt.Println("Exiting with panic")
+
+        stackTrace := make([]byte, 1024)
+        runtime.Stack(stackTrace, false)
+        stackTraceStr := strings.ReplaceAll(string(stackTrace), "\t", "    ")
+        sdl.ShowSimpleMessageBox(sdl.MESSAGEBOX_ERROR, "Timer Crash", fmt.Sprintf(
+                "Timer has just crashed. Please create an issue on Github.\n\nPanic value: %v\n\nStack trace:\n%s",
+                r, stackTraceStr), nil)
+
+        panic(r)
+    }
+}
+
 // TODO: Taskbar icon
 // TODO: Hiding with taskbar icon
 
 func main() {
+    defer onExit()
+
     exeDir := common.GetExeDir()
 
     confPath := common.GetRealPath(exeDir, CONF_PATH)
