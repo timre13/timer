@@ -277,6 +277,10 @@ func renderStats(win *sdl.Window, rend *sdl.Renderer, font *ttf.Font, stats_ *st
     */
 }
 
+func formatTimeMs(time int) string {
+    return fmt.Sprintf("%02d:%02d", time/1000/60, time/1000%60)
+}
+
 // TODO: Taskbar icon
 // TODO: Hiding with taskbar icon
 
@@ -426,11 +430,33 @@ func main() {
 
     remTimeLabelW, remTimeLabelH, err := remTimeFont.SizeUTF8("00:00")
     PANIC_ERR(err)
-    remTimeLabel := label.Label{
+    // If true, show remaining time
+    // If false, show elapsed time
+    timeLabelShowRem := true
+    timeLabel := label.Label{
         Text: "--:--",
         XPos: CLOCK_CENT_X-int32(remTimeLabelW)/2, YPos: CLOCK_CENT_Y-int32(remTimeLabelH)/2,
         Font: remTimeFont, FgColor: &COLOR_FG}
-    widgetPtrs = append(widgetPtrs, &remTimeLabel)
+    widgetPtrs = append(widgetPtrs, &timeLabel)
+
+    // TODO: Maybe find a better way to add tooltip and callback to a label
+    timeLabelBtn := button.Button{
+        CentX: CLOCK_CENT_X, CentY: CLOCK_CENT_Y,
+        Tooltip: "Remaining time",
+        Radius: int32(remTimeLabelW/2),
+        DefColor: &COLOR_TRANSPARENT,
+        HoverColor: &COLOR_TRANSPARENT,
+        HoverBdColor: &COLOR_TRANSPARENT,
+    }
+    timeLabelBtn.Callback = func(*button.Button){
+        timeLabelShowRem = !timeLabelShowRem
+        if timeLabelShowRem {
+            timeLabelBtn.Tooltip = "Remaining time"
+        } else {
+            timeLabelBtn.Tooltip = "Elapsed time"
+        }
+    }
+    widgetPtrs = append(widgetPtrs, &timeLabelBtn)
 
 
     sdl.StartTextInput()
@@ -518,8 +544,12 @@ func main() {
         // The config menu is displayed when `confWidgetPtrs` has widgets
         if len(confWidgetPtrs) == 0 {
             drawClock(rend, elapsedTimeMs/fullTimeMs*100.0)
-            remTimeStr := fmt.Sprintf("%02d:%02d", remTimeMs/1000/60, remTimeMs/1000%60)
-            remTimeLabel.Text = remTimeStr
+            remTimeStr := formatTimeMs(remTimeMs)
+            if timeLabelShowRem {
+                timeLabel.Text = remTimeStr
+            } else {
+                timeLabel.Text = formatTimeMs(int(elapsedTimeMs))
+            }
 
             if conf.ShowRemTimeInWinTitle {
                 title := WIN_TITLE+" - " + remTimeStr
